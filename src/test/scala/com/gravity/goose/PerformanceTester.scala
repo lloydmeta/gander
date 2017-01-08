@@ -1,6 +1,6 @@
 package com.gravity.goose
 
-import org.apache.commons.lang.time.StopWatch
+import org.apache.commons.lang3.time.StopWatch
 import java.io.InputStream
 import org.apache.commons.io.IOUtils
 import utils.FileHelper

@@ -19,7 +19,7 @@
 package com.gravity.goose.outputformatters
 
 import org.jsoup.nodes._
-import org.apache.commons.lang.StringEscapeUtils
+import org.apache.commons.lang3.StringEscapeUtils
 import org.jsoup.select.Elements
 import com.gravity.goose.text.StopWords
 import scala.collection.JavaConversions._
@@ -43,7 +43,7 @@ trait OutputFormatter {
     case null => new Elements(List.empty[Element])
     case n => n.select(query)
   }
-  
+
   /**
   * Depricated use {@link #getFormattedText(Element)}
   * @param topNode the top most node to format
@@ -80,7 +80,7 @@ trait OutputFormatter {
     case null => ""
     case node => {
       (node.children().map((e: Element) => {
-        StringEscapeUtils.unescapeHtml(e.text).trim
+        StringEscapeUtils.escapeHtml4(e.text).trim
       })).toList.mkString("\n\n")
     }
 
