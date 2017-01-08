@@ -1,41 +1,35 @@
 /**
- * Licensed to Gravity.com under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  Gravity.com licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
+  * Licensed to Gravity.com under one
+  * or more contributor license agreements.  See the NOTICE file
+  * distributed with this work for additional information
+  * regarding copyright ownership.  Gravity.com licenses this file
+  * to you under the Apache License, Version 2.0 (the
+  * "License"); you may not use this file except in compliance
+  * with the License.  You may obtain a copy of the License at
+  *
+  *     http://www.apache.org/licenses/LICENSE-2.0
+  *
+  * Unless required by applicable law or agreed to in writing, software
+  * distributed under the License is distributed on an "AS IS" BASIS,
+  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  * See the License for the specific language governing permissions and
+  * limitations under the License.
+  */
 package com.gravity.goose.network
 
-import org.apache.http.HttpEntity
-import org.apache.http.HttpResponse
-import org.apache.http.HttpVersion
+import org.apache.http.{Header, HttpEntity, HttpHeaders, HttpResponse, HttpVersion, ProtocolVersion}
 import org.apache.http.client.CookieStore
 import org.apache.http.client.HttpClient
 import org.apache.http.client.methods.HttpGet
 import org.apache.http.client.params.CookiePolicy
-import org.apache.http.client.protocol.ClientContext
+import org.apache.http.client.protocol.{ClientContext, HttpClientContext}
 import org.apache.http.conn.scheme.PlainSocketFactory
 import org.apache.http.conn.ssl.SSLSocketFactory
 import org.apache.http.conn.scheme.Scheme
 import org.apache.http.conn.scheme.SchemeRegistry
 import org.apache.http.cookie.Cookie
 import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager
-import org.apache.http.params.BasicHttpParams
-import org.apache.http.params.HttpConnectionParams
-import org.apache.http.params.HttpParams
-import org.apache.http.params.HttpProtocolParams
+import org.apache.http.params._
 import org.apache.http.protocol.BasicHttpContext
 import org.apache.http.protocol.HttpContext
 import org.apache.http.util.EntityUtils
@@ -43,56 +37,63 @@ import java.io._
 import java.net.SocketException
 import java.net.SocketTimeoutException
 import java.net.URLConnection
+import java.util
 import java.util.ArrayList
 import java.util.List
 import java.util.Date
+
 import com.gravity.goose.utils.Logging
 import com.gravity.goose.Configuration
-import org.apache.http.impl.client.{DefaultHttpRequestRetryHandler, AbstractHttpClient, DefaultHttpClient}
-
+import org.apache.http.client.config.{CookieSpecs, RequestConfig}
+import org.apache.http.config.{ConnectionConfig, SocketConfig}
+import org.apache.http.entity.ContentType
+import org.apache.http.impl.client.{AbstractHttpClient, DefaultHttpClient, DefaultHttpRequestRetryHandler, HttpClientBuilder}
+import org.apache.http.impl.conn.PoolingHttpClientConnectionManager
+import org.apache.http.message.BasicHeader
 
 /**
- * User: Jim Plush
- * Date: 12/16/10
- * This guy is kind of a doozy because goose is meant to pull millions of articles per day so the legitimacy of these links
- * is in question. For example many times you'll see mp3, mov, wav, etc.. files mislabeled as HTML with HTML content types,
- * only through inspection of the actual content will you learn what the real type of content is. Also spam sites could
- * contain up to 1GB of text that is just wasted resources so we set a max bytes level on how much content we're going
- * to try and pull back before we say screw it.
- */
+  * User: Jim Plush
+  * Date: 12/16/10
+  * This guy is kind of a doozy because goose is meant to pull millions of articles per day so the legitimacy of these links
+  * is in question. For example many times you'll see mp3, mov, wav, etc.. files mislabeled as HTML with HTML content types,
+  * only through inspection of the actual content will you learn what the real type of content is. Also spam sites could
+  * contain up to 1GB of text that is just wasted resources so we set a max bytes level on how much content we're going
+  * to try and pull back before we say screw it.
+  */
 object HtmlFetcher extends AbstractHtmlFetcher with Logging {
+
   /**
-   * holds a reference to our override cookie store, we don't want to store
-   * cookies for head requests, only slows shit down
-   */
+    * holds a reference to our override cookie store, we don't want to store
+    * cookies for head requests, only slows shit down
+    */
   var emptyCookieStore: CookieStore = null
+
   /**
-   * holds the HttpClient object for making requests
-   */
+    * holds the HttpClient object for making requests
+    */
   private var httpClient: HttpClient = null
   initClient()
-
 
   def getHttpClient: HttpClient = {
     httpClient
   }
 
   /**
-   * Makes an http fetch to go retrieve the HTML from a url, store it to disk and pass it off
-   * @param config Goose Configuration
-   * @param url The web address to fetch
-   * @return If all goes well, a `Some[String]` otherwise `None`
-   * @throws NotFoundException(String)
-   * @throws BadRequestException(String)
-   * @throws NotAuthorizedException(String, Int)
-   * @throws ServerErrorException(String, Int)
-   * @throws UnhandledStatusCodeException(String, Int)
-   * @throws MaxBytesException()
-   */
+    * Makes an http fetch to go retrieve the HTML from a url, store it to disk and pass it off
+    * @param config Goose Configuration
+    * @param url The web address to fetch
+    * @return If all goes well, a `Some[String]` otherwise `None`
+    * @throws NotFoundException(String)
+    * @throws BadRequestException(String)
+    * @throws NotAuthorizedException(String, Int)
+    * @throws ServerErrorException(String, Int)
+    * @throws UnhandledStatusCodeException(String, Int)
+    * @throws MaxBytesException()
+    */
   def getHtml(config: Configuration, url: String): Option[String] = {
-    var httpget: HttpGet = null
-    var htmlResult: String = null
-    var entity: HttpEntity = null
+    var httpget: HttpGet      = null
+    var htmlResult: String    = null
+    var entity: HttpEntity    = null
     var instream: InputStream = null
 
     // Identified the the apache http client does not drop URL fragments before opening the request to the host
@@ -104,20 +105,21 @@ object HtmlFetcher extends AbstractHtmlFetcher with Logging {
 
     try {
       val localContext: HttpContext = new BasicHttpContext
-      localContext.setAttribute(ClientContext.COOKIE_STORE, HtmlFetcher.emptyCookieStore)
+      localContext.setAttribute(HttpClientContext.COOKIE_STORE, HtmlFetcher.emptyCookieStore)
       httpget = new HttpGet(cleanUrl)
-      HttpProtocolParams.setUserAgent(httpClient.getParams, config.getBrowserUserAgent());
+      httpget.setProtocolVersion(HttpVersion.HTTP_1_1)
+      httpget.setHeader(new BasicHeader(HttpHeaders.USER_AGENT, config.getBrowserUserAgent))
 
-      val params = httpClient.getParams
-      HttpConnectionParams.setConnectionTimeout(params, config.getConnectionTimeout())
-      HttpConnectionParams.setSoTimeout(params, config.getSocketTimeout())
+      val requestConfigBuilder = RequestConfig.custom()
+      requestConfigBuilder.setConnectTimeout(config.getConnectionTimeout)
+      requestConfigBuilder.setSocketTimeout(config.getSocketTimeout)
+      httpget.setConfig(requestConfigBuilder.build())
 
-      trace("Setting UserAgent To: " + HttpProtocolParams.getUserAgent(httpClient.getParams))
       val response: HttpResponse = httpClient.execute(httpget, localContext)
 
       HttpStatusValidator.validate(cleanUrl, response.getStatusLine.getStatusCode) match {
         case Left(ex) => throw ex
-        case _ =>
+        case _        =>
       }
 
       entity = response.getEntity
@@ -125,12 +127,11 @@ object HtmlFetcher extends AbstractHtmlFetcher with Logging {
         instream = entity.getContent
         var encodingType: String = "UTF-8"
         try {
-          encodingType = EntityUtils.getContentCharSet(entity)
+          encodingType = ContentType.getOrDefault(entity).getCharset.toString
           if (encodingType == null) {
             encodingType = "UTF-8"
           }
-        }
-        catch {
+        } catch {
           case e: Exception => {
             if (logger.isDebugEnabled) {
               trace("Unable to get charset for: " + cleanUrl)
@@ -140,16 +141,13 @@ object HtmlFetcher extends AbstractHtmlFetcher with Logging {
         }
         try {
           htmlResult = HtmlFetcher.convertStreamToString(instream, 15728640, encodingType).trim
-        }
-        finally {
+        } finally {
           EntityUtils.consume(entity)
         }
-      }
-      else {
+      } else {
         trace("Unable to fetch URL Properly: " + cleanUrl)
       }
-    }
-    catch {
+    } catch {
       case e: NullPointerException => {
         logger.warn(e.toString + " " + e.getMessage + " Caught for URL: " + cleanUrl)
       }
@@ -171,13 +169,11 @@ object HtmlFetcher extends AbstractHtmlFetcher with Logging {
         trace("FAILURE FOR LINK: " + cleanUrl + " " + e.toString)
         return None
       }
-    }
-    finally {
+    } finally {
       if (instream != null) {
         try {
           instream.close()
-        }
-        catch {
+        } catch {
           case e: Exception => {
             logger.warn(e.getMessage + " Caught for URL: " + cleanUrl)
           }
@@ -187,10 +183,8 @@ object HtmlFetcher extends AbstractHtmlFetcher with Logging {
         try {
           httpget.abort()
           entity = null
-        }
-        catch {
-          case e: Exception => {
-          }
+        } catch {
+          case e: Exception => {}
         }
       }
     }
@@ -203,7 +197,7 @@ object HtmlFetcher extends AbstractHtmlFetcher with Logging {
       }
       throw new NotHtmlException(cleanUrl)
     }
-    var is: InputStream = null
+    var is: InputStream  = null
     var mimeType: String = null
     try {
       is = new ByteArrayInputStream(htmlResult.getBytes("UTF-8"))
@@ -211,20 +205,17 @@ object HtmlFetcher extends AbstractHtmlFetcher with Logging {
       if (mimeType != null) {
         if ((mimeType == "text/html") == true || (mimeType == "application/xml") == true) {
           return Some(htmlResult)
-        }
-        else {
+        } else {
           if (htmlResult.contains("<title>") == true && htmlResult.contains("<p>") == true) {
             return Some(htmlResult)
           }
           trace("GRVBIGFAIL: " + mimeType + " - " + cleanUrl)
           throw new NotHtmlException(cleanUrl)
         }
-      }
-      else {
+      } else {
         throw new NotHtmlException(cleanUrl)
       }
-    }
-    catch {
+    } catch {
       case e: UnsupportedEncodingException => {
         logger.warn(e.getMessage + " Caught for URL: " + cleanUrl)
       }
@@ -235,17 +226,46 @@ object HtmlFetcher extends AbstractHtmlFetcher with Logging {
     None
   }
 
-  private def initClient() {
+  private def initClient(): Unit = {
 
     trace("Initializing HttpClient")
 
-    val httpParams: HttpParams = new BasicHttpParams
-    HttpConnectionParams.setConnectionTimeout(httpParams, 10 * 1000)
-    HttpConnectionParams.setSoTimeout(httpParams, 10 * 1000)
-    HttpProtocolParams.setVersion(httpParams, HttpVersion.HTTP_1_1)
+    val requestConfigBuilder = RequestConfig.custom()
+    requestConfigBuilder.setConnectTimeout(10 * 1000)
+    requestConfigBuilder.setSocketTimeout(10 * 1000)
+    requestConfigBuilder.setCookieSpec(CookieSpecs.DEFAULT)
+    val requestConfig = requestConfigBuilder.build()
+
+    val headers = new util.ArrayList[Header]
+    headers.add(
+      new BasicHeader(
+        HttpHeaders.USER_AGENT,
+        "Mozilla/5.0 (X11; U; Linux x86_64; de; rv:1.9.2.8) Gecko/20100723 Ubuntu/10.04 (lucid) Firefox/3.6.8"))
+    headers.add(new BasicHeader(HttpHeaders.ACCEPT_LANGUAGE, "en-us"))
+    headers.add(new BasicHeader(HttpHeaders.ACCEPT_CHARSET, "UTF-8"))
+    headers.add(new BasicHeader(
+      HttpHeaders.ACCEPT,
+      "application/xml,application/xhtml+xml,text/html;q=0.9,text/plain;q=0.8,image/png,*/*;q=0.5"))
+    headers.add(new BasicHeader(HttpHeaders.CACHE_CONTROL, "max-age=0"))
+
+    val socketConfigBuilder = SocketConfig.custom()
+    socketConfigBuilder.setTcpNoDelay(true)
+    val socketConfig = socketConfigBuilder.build()
+
+    val threadManager = new PoolingHttpClientConnectionManager()
+    threadManager.setMaxTotal(20000)
+    threadManager.setDefaultMaxPerRoute(500)
+    threadManager.setValidateAfterInactivity(50)
+    threadManager.setDefaultSocketConfig(socketConfig)
+
+    val clientBuilder = HttpClientBuilder.create()
+    clientBuilder.setDefaultRequestConfig(requestConfig)
+    clientBuilder.setDefaultHeaders(headers)
+    clientBuilder.setRetryHandler(new DefaultHttpRequestRetryHandler(0, false))
+    clientBuilder.setConnectionManager(threadManager)
+
     emptyCookieStore = new CookieStore {
-      def addCookie(cookie: Cookie) {
-      }
+      def addCookie(cookie: Cookie) {}
 
       def getCookies: List[Cookie] = {
         emptyList
@@ -255,46 +275,29 @@ object HtmlFetcher extends AbstractHtmlFetcher with Logging {
         false
       }
 
-      def clear() {
-      }
+      def clear() {}
 
-      private[network] var emptyList: ArrayList[Cookie] = new ArrayList[Cookie]
+      private[network] var emptyList: util.ArrayList[Cookie] = new util.ArrayList[Cookie]
     }
-    httpParams.setParameter("http.protocol.cookie-policy", CookiePolicy.BROWSER_COMPATIBILITY)
-    httpParams.setParameter("http.User-Agent", "Mozilla/5.0 (X11; U; Linux x86_64; de; rv:1.9.2.8) Gecko/20100723 Ubuntu/10.04 (lucid) Firefox/3.6.8")
-    httpParams.setParameter("http.language.Accept-Language", "en-us")
-    httpParams.setParameter("http.protocol.content-charset", "UTF-8")
-    httpParams.setParameter("Accept", "application/xml,application/xhtml+xml,text/html;q=0.9,text/plain;q=0.8,image/png,*/*;q=0.5")
-    httpParams.setParameter("Cache-Control", "max-age=0")
-    httpParams.setParameter("http.connection.stalecheck", false)
-    val schemeRegistry: SchemeRegistry = new SchemeRegistry
-    schemeRegistry.register(new Scheme("http", 80, PlainSocketFactory.getSocketFactory))
-    schemeRegistry.register(new Scheme("https", 443, SSLSocketFactory.getSocketFactory))
-    val cm = new ThreadSafeClientConnManager(schemeRegistry)
-    cm.setMaxTotal(20000)
-    cm.setDefaultMaxPerRoute(500)
-    httpClient = new DefaultHttpClient(cm, httpParams)
-    httpClient.asInstanceOf[AbstractHttpClient].setHttpRequestRetryHandler(new DefaultHttpRequestRetryHandler(0, false))
-    httpClient.getParams.setParameter("http.conn-manager.timeout", 120000L)
-    httpClient.getParams.setParameter("http.protocol.wait-for-continue", 10000L)
-    httpClient.getParams.setParameter("http.tcp.nodelay", true)
+
+    httpClient = clientBuilder.build()
   }
 
   /**
-   * reads bytes off the string and returns a string
-   *
-   * @param is the source stream from the response
-   * @param maxBytes The max bytes that we want to read from the input stream
-   * @return String
-   */
+    * reads bytes off the string and returns a string
+    *
+    * @param is the source stream from the response
+    * @param maxBytes The max bytes that we want to read from the input stream
+    * @return String
+    */
   def convertStreamToString(is: InputStream, maxBytes: Int, encodingType: String): String = {
     val buf: Array[Char] = new Array[Char](2048)
-    var r: Reader = null
-    val s = new StringBuilder
+    var r: Reader        = null
+    val s                = new StringBuilder
     try {
       r = new InputStreamReader(is, encodingType)
       var bytesRead: Int = 2048
-      var inLoop = true
+      var inLoop         = true
       while (inLoop) {
         if (bytesRead >= maxBytes) {
           throw new MaxBytesException
@@ -306,8 +309,7 @@ object HtmlFetcher extends AbstractHtmlFetcher with Logging {
         if (inLoop) s.appendAll(buf, 0, n)
       }
       return s.toString()
-    }
-    catch {
+    } catch {
       case e: SocketTimeoutException => {
         logger.warn(e.toString + " " + e.getMessage)
       }
@@ -317,22 +319,16 @@ object HtmlFetcher extends AbstractHtmlFetcher with Logging {
       case e: IOException => {
         logger.warn(e.toString + " " + e.getMessage)
       }
-    }
-    finally {
+    } finally {
       if (r != null) {
         try {
           r.close()
-        }
-        catch {
-          case e: Exception => {
-          }
+        } catch {
+          case e: Exception => {}
         }
       }
     }
     null
   }
 
-
 }
-
-
