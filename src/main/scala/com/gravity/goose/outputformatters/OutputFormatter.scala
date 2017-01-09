@@ -80,7 +80,7 @@ trait OutputFormatter {
     case null => ""
     case node => {
       (node.children().map((e: Element) => {
-        StringEscapeUtils.escapeHtml4(e.text).trim
+        StringEscapeUtils.unescapeHtml4(e.text).trim
       })).toList.mkString("\n\n")
     }
 
