@@ -5,9 +5,11 @@ import org.junit.Test
 import org.junit.Assert._
 import utils.FileHelper
 import java.text.SimpleDateFormat
+
 import org.jsoup.select.Selector
 import org.jsoup.nodes.Element
-import java.util.Date
+import org.joda.time.DateTime
+import org.joda.time.format.DateTimeFormat
 
 /**
  * Created by Jim Plush
@@ -174,14 +176,14 @@ class TextExtractions {
   def wiredPubDate() {
     val url = "http://www.wired.com/playbook/2010/08/stress-hormones-boxing/";
     val html = getHtml("wired1.txt")
-    val fmt = new SimpleDateFormat("yyyy-MM-dd")
+    val fmt = DateTimeFormat.forPattern("yyyy-MM-dd");
 
     // example of a custom PublishDateExtractor
     implicit val config = new Configuration();
     config.enableImageFetching = false
     config.setPublishDateExtractor(new PublishDateExtractor() {
       @Override
-      def extract(rootElement: Element): Date = {
+      def extract(rootElement: Element): DateTime = {
         // look for this guy: <meta name="DisplayDate" content="2010-08-18" />
         val elements = Selector.select("meta[name=DisplayDate]", rootElement);
         if (elements.size() == 0) return null;
@@ -189,7 +191,7 @@ class TextExtractions {
         if (metaDisplayDate.hasAttr("content")) {
           val dateStr = metaDisplayDate.attr("content");
 
-          return fmt.parse(dateStr);
+          return fmt.parseDateTime(dateStr);
         }
         null;
       }
@@ -204,8 +206,8 @@ class TextExtractions {
 
     val expectedDateString = "2010-08-18";
     assertNotNull("publishDate should not be null!", article.publishDate);
-    assertEquals("Publish date should equal: \"2010-08-18\"", expectedDateString, fmt.format(article.publishDate));
-    System.out.println("Publish Date Extracted: " + fmt.format(article.publishDate));
+    assertEquals("Publish date should equal: \"2010-08-18\"", expectedDateString, article.publishDate.toString(fmt));
+    System.out.println("Publish Date Extracted: " + article.publishDate.toString(fmt));
 
   }
 
