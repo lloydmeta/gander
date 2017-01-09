@@ -1,4 +1,4 @@
-name := "Goose"
+name := "Gander"
 
 version := "2.1.25-SNAPSHOT"
 
