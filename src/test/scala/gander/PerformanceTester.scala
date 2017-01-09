@@ -36,7 +36,7 @@ object PerformanceTester {
     clock.start()
 
     for (i <- 0 to 100) {
-      goose.extractContent(url, html)
+      goose.extractArticleData(url, html)
     }
     clock.stop()
     System.out.println("It takes " + clock.getTime + " milliseconds")

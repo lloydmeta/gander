@@ -38,7 +38,7 @@ object TestUtils {
     */
   def getArticle(url: String, rawHTML: String = null)(implicit config: Configuration): Article = {
     val goose = new Gander(config)
-    goose.extractContent(url, rawHTML).get
+    goose.extractArticleData(url, rawHTML).get
   }
 
   def runArticleAssertions(article: Article,
@@ -49,16 +49,10 @@ object TestUtils {
                            expectedKeywords: String = null): Unit = {
     articleReport.append("URL:      ").append(TAB).append(article.finalUrl).append(NL)
     articleReport.append("TITLE:    ").append(TAB).append(article.title).append(NL)
-    articleReport
-      .append("IMAGE:    ")
-      .append(TAB)
-      .append(article.topImage.get.getImageSrc)
-      .append(NL)
-    articleReport
-      .append("IMGKIND:  ")
-      .append(TAB)
-      .append(article.topImage.get.imageExtractionType)
-      .append(NL)
+    article.topImage.foreach { img =>
+      articleReport.append("IMAGE:    ").append(TAB).append(img.imageSrc).append(NL)
+      articleReport.append("IMGKIND:  ").append(TAB).append(img.imageExtractionType).append(NL)
+    }
     articleReport
       .append("CONTENT:  ")
       .append(TAB)
@@ -87,9 +81,9 @@ object TestUtils {
       assertEquals("The beginning of the article text was not as expected!", expectedStart, actual)
     }
     if (expectedImage != null) {
-      val image: Image = article.topImage.get
+      val image = article.topImage.get
       assertNotNull("Top image was NULL!", image)
-      val src: String = image.getImageSrc
+      val src: String = image.imageSrc
       assertNotNull("Image src was NULL!", src)
       assertEquals("Image src was not as expected!", expectedImage, src)
     }

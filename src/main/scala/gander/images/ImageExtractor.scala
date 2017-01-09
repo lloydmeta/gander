@@ -17,7 +17,7 @@
   */
 package gander.images
 
-import org.jsoup.nodes.{Document, Element}
+import org.jsoup.nodes.Document
 import gander.utils.{CanLog, Logging}
 import org.slf4j.Logger
 
@@ -37,49 +37,51 @@ case class LocallyStoredImage(imgSrc: String,
 
 trait ImageExtractor extends CanLog {
 
-  def getBestImage(doc: Document, topNode: Element): Image
+  protected def doc: Document
 
-  def logPrefix: String = ImageExtractor.loggingPrefix
+  def getBestImage(): Option[Image]
 
-  def critical(msg: String, refs: Any*): Unit = {
+  protected def logPrefix: String = ImageExtractor.loggingPrefix
+
+  protected def critical(msg: String, refs: Any*): Unit = {
     ImageExtractor.critical(msg, refs: _*)
   }
 
-  def critical(t: Throwable, msg: String, refs: Any*): Unit = {
+  protected def critical(t: Throwable, msg: String, refs: Any*): Unit = {
     ImageExtractor.critical(t, msg, refs: _*)
   }
 
-  def debug(msg: String, refs: Any*): Unit = {
+  protected def debug(msg: String, refs: Any*): Unit = {
     ImageExtractor.debug(msg, refs: _*)
   }
 
-  def debug(t: Throwable, msg: String, refs: Any*): Unit = {
+  protected def debug(t: Throwable, msg: String, refs: Any*): Unit = {
     ImageExtractor.debug(t, msg, refs: _*)
   }
 
-  def info(msg: String, refs: Any*): Unit = {
+  protected def info(msg: String, refs: Any*): Unit = {
     ImageExtractor.info(msg, refs: _*)
   }
 
-  def info(t: Throwable, msg: String, refs: Any*): Unit = {
+  protected def info(t: Throwable, msg: String, refs: Any*): Unit = {
     ImageExtractor.info(t, msg, refs: _*)
   }
 
-  def logger: Logger = ImageExtractor.logger
+  protected def logger: Logger = ImageExtractor.logger
 
-  def trace(msg: String, refs: Any*): Unit = {
+  protected def trace(msg: String, refs: Any*): Unit = {
     ImageExtractor.trace(msg, refs: _*)
   }
 
-  def trace(t: Throwable, msg: String, refs: Any*): Unit = {
+  protected def trace(t: Throwable, msg: String, refs: Any*): Unit = {
     ImageExtractor.trace(t, msg, refs: _*)
   }
 
-  def warn(msg: String, refs: Any*): Unit = {
+  protected def warn(msg: String, refs: Any*): Unit = {
     ImageExtractor.warn(msg, refs: _*)
   }
 
-  def warn(t: Throwable, msg: String, refs: Any*): Unit = {
+  protected def warn(t: Throwable, msg: String, refs: Any*): Unit = {
     ImageExtractor.warn(t, msg, refs: _*)
   }
 }

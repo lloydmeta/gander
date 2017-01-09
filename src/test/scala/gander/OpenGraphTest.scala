@@ -22,7 +22,7 @@ class OpenGraphTest {
     val text = TestUtils.getHtml("telegraph.txt")
     val article = {
       val goose = new Gander(config)
-      goose.extractContent(url, text)
+      goose.extractArticleData(url, text)
     }.get
     assertEquals(
       "og:description was not as expected!",

@@ -30,29 +30,16 @@ import org.slf4j.Logger
   * Date: 8/17/11
   */
 trait OutputFormatter {
-  val logPrefix = "outformat: "
+  private val logPrefix = "outformat: "
 
   // used to remove tags within tags
-  val tagReplace = "<[^>]+>".r
+  private val tagReplace = "<[^>]+>".r
 
   def logger: Logger
 
   private def selectElements(query: String, topNode: Element): Elements = topNode match {
     case null => new Elements(List.empty[Element])
     case n    => n.select(query)
-  }
-
-  /**
-    * Depricated use {@link #getFormattedText(Element)}
-    * @param topNode the top most node to format
-    * @return the prepared Element
-    */
-  @Deprecated def getFormattedElement(topNode: Element): Element = {
-    removeNodesWithNegativeScores(topNode)
-    convertLinksToText(topNode)
-    replaceTagsWithText(topNode)
-    removeParagraphsWithFewWords(topNode)
-    topNode
   }
 
   /**
@@ -77,11 +64,11 @@ trait OutputFormatter {
   def convertToText(topNode: Element): String = topNode match {
     case null => ""
     case node => {
-      (node
+      node
         .children()
         .map((e: Element) => {
           StringEscapeUtils.unescapeHtml4(e.text).trim
-        }))
+        })
         .toList
         .mkString("\n\n")
     }

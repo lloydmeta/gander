@@ -17,6 +17,9 @@
   */
 package gander
 
+import gander.cleaners.StandardDocumentCleaner
+import gander.outputformatters.StandardOutputFormatter
+
 /**
   * Created by Jim Plush - Gravity.com
   * Date: 8/14/11
@@ -27,17 +30,31 @@ class Gander(config: Configuration = Configuration.Default) {
     * Main method to extract an article object from a URL, pass in a url and get back a Article
     * @url The url that you want to extract
     */
-  def extractContent(url: String, rawHTML: String): Option[Article] = {
+  def extractArticleData(url: String, rawHTML: String): Option[Article] = {
     val cc      = new CrawlCandidate(config, url, rawHTML)
     val crawler = new Crawler(config)
     val article = crawler.crawl(cc)
     article
   }
 
+  /**
+    * Just extracts the text without doing all the heavy lifting like in extract article data
+    * @param rawHtml
+    * @return
+    */
+  def extractText(rawHtml: String): Option[String] = {
+    for {
+      doc <- Crawler.getDocument(rawHtml)
+      cleanedDoc = Gander.docCleaner.clean(doc)
+      topNode <- config.contentExtractor.calculateBestNodeBasedOnClustering(cleanedDoc)
+    } yield StandardOutputFormatter.getFormattedText(topNode)
+  }
+
 }
 
 object Gander {
 
-  val logPrefix = "goose: "
+  private val logPrefix  = "goose: "
+  private val docCleaner = new StandardDocumentCleaner
 
 }

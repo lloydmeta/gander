@@ -94,25 +94,25 @@ object Logging {
 }
 
 trait CanLog {
-  def logger: Logger
+  protected def logger: Logger
 
-  def trace(msg: String, refs: Any*): Unit
+  protected def trace(msg: String, refs: Any*): Unit
 
-  def trace(t: Throwable, msg: String, refs: Any*): Unit
+  protected def trace(t: Throwable, msg: String, refs: Any*): Unit
 
-  def info(msg: String, refs: Any*): Unit
+  protected def info(msg: String, refs: Any*): Unit
 
-  def info(t: Throwable, msg: String, refs: Any*): Unit
+  protected def info(t: Throwable, msg: String, refs: Any*): Unit
 
-  def warn(msg: String, refs: Any*): Unit
+  protected def warn(msg: String, refs: Any*): Unit
 
-  def warn(t: Throwable, msg: String, refs: Any*): Unit
+  protected def warn(t: Throwable, msg: String, refs: Any*): Unit
 
-  def critical(msg: String, refs: Any*): Unit
+  protected def critical(msg: String, refs: Any*): Unit
 
-  def critical(t: Throwable, msg: String, refs: Any*): Unit
+  protected def critical(t: Throwable, msg: String, refs: Any*): Unit
 
-  def debug(msg: String, refs: Any*): Unit
+  protected def debug(msg: String, refs: Any*): Unit
 
-  def debug(t: Throwable, msg: String, refs: Any*): Unit
+  protected def debug(t: Throwable, msg: String, refs: Any*): Unit
 }

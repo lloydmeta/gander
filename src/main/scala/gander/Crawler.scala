@@ -19,14 +19,14 @@ package gander
 
 import cleaners.{DocumentCleaner, StandardDocumentCleaner}
 import extractors.ContentExtractor
-import images.{ImageExtractor, DefaultImageExtractor}
+import images.{DefaultImageExtractor, ImageExtractor}
 import org.jsoup.nodes.Document
 import org.jsoup.Jsoup
-
 import utils.{Logging, URLHelper}
 import gander.outputformatters.{OutputFormatter, StandardOutputFormatter}
 
 import scala.util.Try
+import scala.util.control.NonFatal
 
 /**
   * Created by Jim Plush
@@ -43,7 +43,7 @@ class Crawler(config: Configuration) {
     for {
       parseCandidate <- URLHelper.getCleanedUrl(crawlCandidate.url)
       rawHtml = crawlCandidate.rawHTML
-      doc <- getDocument(parseCandidate.url.toString, rawHtml)
+      doc <- Crawler.getDocument(rawHtml)
     } yield {
       trace("Crawling url: " + parseCandidate.url)
 
@@ -75,8 +75,8 @@ class Crawler(config: Configuration) {
           getImageExtractor(linkHash = linkHash, targetUrl = finalUrl, rawDoc = rawDoc)
         for {
           node <- topNode
-          tryImg = Try(imageExtractor.getBestImage(rawDoc, node))
-          img <- tryImg.toOption
+          tryImg = Try(imageExtractor.getBestImage())
+          img <- tryImg.toOption.flatten
         } yield img
       }
       val cleanedTopNode     = topNode.map(extractor.postExtractionCleanup)
@@ -106,10 +106,7 @@ class Crawler(config: Configuration) {
   }
 
   def getImageExtractor(linkHash: String, targetUrl: String, rawDoc: Document): ImageExtractor = {
-    new DefaultImageExtractor(linkHash = linkHash,
-                              targetUrl = targetUrl,
-                              rawDoc = rawDoc,
-                              config = config)
+    new DefaultImageExtractor(targetUrl = targetUrl, doc = rawDoc, config = config)
   }
 
   def getOutputFormatter: OutputFormatter = {
@@ -120,18 +117,6 @@ class Crawler(config: Configuration) {
     new StandardDocumentCleaner
   }
 
-  def getDocument(url: String, rawlHtml: String): Option[Document] = {
-
-    try {
-      Some(Jsoup.parse(rawlHtml))
-    } catch {
-      case e: Exception => {
-        trace("Unable to parse " + url + " properly into JSoup Doc")
-        None
-      }
-    }
-  }
-
   def getExtractor: ContentExtractor = {
     config.contentExtractor
   }
@@ -139,5 +124,18 @@ class Crawler(config: Configuration) {
 }
 
 object Crawler extends Logging {
-  val logPrefix = "crawler: "
+
+  private val logPrefix = "crawler: "
+
+  def getDocument(rawHtml: String): Option[Document] = {
+    try {
+      Some(Jsoup.parse(rawHtml))
+    } catch {
+      case NonFatal(e) => {
+        trace("Unable to parse properly into JSoup Doc", e)
+        None
+      }
+    }
+  }
+
 }

@@ -181,6 +181,16 @@ class TextExtractions {
   }
 
   @Test
+  def wallStreetJournalTextOnly() {
+    val html = getHtml("wsj1.txt")
+    val text = new Gander().extractText(html).get
+    assertTrue(
+      "Extraction contains proper body text",
+      text.contains(
+        """The biggest projects have been the slowest to start. None of the $17.5 billion for incentive payments for doctors and hospitals to start using electronic health records has been spent yet, because rules for payment were finalized only in July. A few recipients of $7.2 billion in grants allocated to the expansion of broadband Internet services have started laying cables, but the rest are still busy with pre-construction work, such as environmental assessments, local approvals to attach fiber to utility poles, permits for rights of way and hiring subcontractors."""))
+  }
+
+  @Test
   def usaToday() {
     implicit val config = TestUtils.NO_IMAGE_CONFIG
     val html            = getHtml("usatoday1.txt")
@@ -307,6 +317,14 @@ class TextExtractions {
     TestUtils.runArticleAssertions(article = article,
                                    expectedStart =
                                      "NEW YORK--Verizon Communications is prepping a new")
+  }
+  @Test
+  def cnetTextExtraction() {
+    implicit val config = TestUtils.NO_IMAGE_CONFIG
+    val html            = getHtml("cnet1.txt")
+    val text            = new Gander().extractText(html).get
+    assertTrue(text.contains(
+      """In an effort to compete with over-the-top Internet offerings and some offerings from competitors such as Comcast, Verizon will soon offer movie purchase and rental options and a three-screen or "Flexview" option that allows subscribers to view digital rights-protected video content to be shown on up to five other devices."""))
   }
 
   @Test
