@@ -19,9 +19,7 @@ import org.joda.time.format.DateTimeFormat
 
 class TextExtractions {
 
-  def getHtml(filename: String): String = {
-    FileHelper.loadResourceFile(TestUtils.staticHtmlDir + filename, Goose.getClass)
-  }
+  def getHtml(filename: String): String = TestUtils.getHtml(filename)
 
   @Test
   def cnn1() {

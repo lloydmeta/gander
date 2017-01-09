@@ -17,11 +17,16 @@ class OpenGraphTest {
 <meta property="og:type" content="article" />
      */
     val url: String = "http://www.telegraph.co.uk/foodanddrink/foodanddrinknews/8808120/Worlds-hottest-chilli-contest-leaves-two-in-hospital.html"
-    val article = TestUtils.getArticle(url)
+
+    val text = TestUtils.getHtml("telegraph.txt")
+    val article =  {
+      val goose = new Goose(config)
+      goose.extractContent(url, text)
+    }
     assertEquals("og:description was not as expected!", article.openGraphData.description,
       "A 'world's hottest chilli' competition at a curry restaurant left two people   in hospital.")
     assertEquals("og:title was not as expected!", article.openGraphData.title,
-      "World's hottest chilli contest leaves two in hospital - Telegraph")
+      "World's hottest chilli contest leaves two in hospital")
     assertEquals("og:url was not as expected!", article.openGraphData.url,
       "http://www.telegraph.co.uk/foodanddrink/foodanddrinknews/8808120/Worlds-hottest-chilli-contest-leaves-two-in-hospital.html")
     assertEquals("og:image was not as expected!", article.openGraphData.image,

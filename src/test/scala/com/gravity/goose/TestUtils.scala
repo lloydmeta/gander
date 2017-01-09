@@ -3,6 +3,7 @@ package com.gravity.goose
 import images.Image
 import junit.framework.Assert._
 import com.gravity.goose.extractors.AdditionalDataExtractor
+import com.gravity.goose.utils.FileHelper
 import org.jsoup.nodes.Element
 
 /**
@@ -92,5 +93,9 @@ object TestUtils {
 
   def printReport() {
     println(articleReport)
+  }
+
+  def getHtml(filename: String): String = {
+    FileHelper.loadResourceFile(TestUtils.staticHtmlDir + filename, Goose.getClass)
   }
 }
