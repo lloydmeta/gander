@@ -12,8 +12,6 @@ description := "Html Content / Article Extractor in Scala"
 
 licenses += "Apache2" -> url("http://www.apache.org/licenses/")
 
-scalaVersion := "2.11.8"
-
 scalacOptions ++= Seq("-unchecked", "-deprecation")
 
 libraryDependencies ++= Seq(
