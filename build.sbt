@@ -21,7 +21,6 @@ libraryDependencies ++= Seq(
   "org.slf4j"                 % "slf4j-simple"  % "1.7.22",
   "org.jsoup"                 % "jsoup"         % "1.10.2",
   "commons-io"                % "commons-io"    % "2.5",
-  "org.apache.httpcomponents" % "httpclient"    % "4.5.2",
   "org.apache.commons"        % "commons-lang3" % "3.5",
   "com.github.nscala-time"    %% "nscala-time"  % "2.16.0",
   // Testing dependencies
