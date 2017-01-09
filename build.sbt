@@ -1,12 +1,10 @@
-name := "Gander"
+name := "gander"
 
 version := "2.1.25-SNAPSHOT"
 
-organization := "com.gravity"
+organization := "com.beachape"
 
-organizationHomepage := Some(url("http://gravity.com/"))
-
-homepage := Some(url("https://github.com/warrd/goose-fork"))
+homepage := Some(url("https://github.com/lloydmeta/gander"))
 
 description := "Html Content / Article Extractor in Scala"
 
@@ -28,19 +26,42 @@ libraryDependencies ++= Seq(
   "org.slf4j" % "slf4j-api" % "1.7.22" % Compile
 )
 
-publishMavenStyle := true
-
 publishTo := {
   val nexus = "https://oss.sonatype.org/"
-  if (isSnapshot.value)
+  if (version.value.trim.endsWith("SNAPSHOT"))
     Some("snapshots" at nexus + "content/repositories/snapshots")
   else
     Some("releases" at nexus + "service/local/staging/deploy/maven2")
 }
 
+organization := "com.beachape"
+
+publishMavenStyle := true
+
+publishArtifact in Test := false
+
+pomIncludeRepository := { _ => false }
+
+scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature", "-Xlint", "-Xlog-free-terms")
+
 pomExtra := (
-  <scm>
-    <url>git@github.com:lloydmeta/gander.git</url>
-    <connection>scm:git:git@github.com:lloydmeta/gander.git</connection>
-  </scm>
-)
+  <url>https://github.com/lloydmeta/gander</url>
+    <licenses>
+      <license>
+        <name>MIT</name>
+        <url>http://opensource.org/licenses/MIT</url>
+        <distribution>repo</distribution>
+      </license>
+    </licenses>
+    <scm>
+      <url>git@github.com:lloydmeta/gander.git</url>
+      <connection>scm:git:git@github.com:lloydmeta/gander.git</connection>
+    </scm>
+    <developers>
+      <developer>
+        <id>lloydmeta</id>
+        <name>Lloyd Chan</name>
+        <url>https://beachape.com</url>
+      </developer>
+    </developers>
+  )
