@@ -18,15 +18,15 @@
 
 package com.gravity.goose
 
-import cleaners.{StandardDocumentCleaner, DocumentCleaner}
+import cleaners.{DocumentCleaner, StandardDocumentCleaner}
 import extractors.ContentExtractor
-import images.{Image, UpgradedImageIExtractor, ImageExtractor}
-import org.apache.http.client.HttpClient
+import images.{Image, ImageExtractor, StandardImageExtractor, UpgradedImageIExtractor}
 import org.jsoup.nodes.{Document, Element}
 import org.jsoup.Jsoup
 import java.io.File
-import utils.{ParsingCandidate, URLHelper, Logging}
-import com.gravity.goose.outputformatters.{StandardOutputFormatter, OutputFormatter}
+
+import utils.{Logging, ParsingCandidate, URLHelper}
+import com.gravity.goose.outputformatters.{OutputFormatter, StandardOutputFormatter}
 
 /**
  * Created by Jim Plush
@@ -44,7 +44,7 @@ class Crawler(config: Configuration) {
     val article = new Article()
     for {
       parseCandidate <- URLHelper.getCleanedUrl(crawlCandidate.url)
-      rawHtml <- getHTML(crawlCandidate, parseCandidate)
+      rawHtml = crawlCandidate.rawHTML
       doc <- getDocument(parseCandidate.url.toString, rawHtml)
     } {
       trace("Crawling url: " + parseCandidate.url)
@@ -109,23 +109,8 @@ class Crawler(config: Configuration) {
     article
   }
 
-  def getHTML(crawlCandidate: CrawlCandidate, parsingCandidate: ParsingCandidate): Option[String] = {
-    if (crawlCandidate.rawHTML != null) {
-      Some(crawlCandidate.rawHTML)
-    } else {
-      config.getHtmlFetcher.getHtml(config, parsingCandidate.url.toString) match {
-        case Some(html) => {
-          Some(html)
-        }
-        case _ => None
-      }
-    }
-  }
-
-
   def getImageExtractor(article: Article): ImageExtractor = {
-    val httpClient: HttpClient = config.getHtmlFetcher.getHttpClient
-    new UpgradedImageIExtractor(httpClient, article, config)
+    new StandardImageExtractor(article, config)
   }
 
   def getOutputFormatter: OutputFormatter = {

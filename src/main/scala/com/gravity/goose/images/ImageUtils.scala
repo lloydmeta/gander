@@ -26,19 +26,13 @@ package com.gravity.goose.images
 import javax.imageio.ImageIO
 import java.awt.color.CMMException
 import java.awt.image.BufferedImage
-import com.gravity.goose.utils.{URLHelper, Logging}
-import org.apache.http.client.HttpClient
-import org.apache.http.HttpEntity
-import org.apache.http.protocol.{BasicHttpContext, HttpContext}
-import org.apache.http.client.protocol.ClientContext
-import org.apache.http.client.methods.HttpGet
-import java.util.{Random, ArrayList, HashMap}
+import com.gravity.goose.utils.Logging
+
+import java.util.HashMap
 import java.io._
 import com.gravity.goose.Configuration
 import com.gravity.goose.text.{string, HashUtils}
-import org.apache.http.util.EntityUtils
 import org.apache.commons.io.IOUtils
-import com.gravity.goose.network.{ImageFetchException, HtmlFetcher}
 
 object ImageUtils extends Logging {
   val spaceRegex = " ".r
@@ -160,43 +154,6 @@ object ImageUtils extends Logging {
   }
 
   /**
-  * Writes an image src http string to disk as a temporary file and returns the LocallyStoredImage object that has the info you should need
-  * on the image
-  */
-  def storeImageToLocalFile(httpClient: HttpClient, linkhash: String, imageSrc: String, config: Configuration): Option[LocallyStoredImage] = {
-
-    try {
-      // check for a cache hit already on disk
-      readExistingFileInfo(linkhash, imageSrc, config) match {
-        case Some(locallyStoredImage) => {
-          trace("Image already cached on disk: " + imageSrc)
-          return Some(locallyStoredImage)
-        }
-        case None =>
-      }
-
-      trace("Not found locally...starting to download image: " + imageSrc)
-      fetchEntity(httpClient, imageSrc, config) match {
-        case Some(entity) => {
-          trace("Got entity for " + imageSrc)
-          writeEntityContentsToDisk(entity, linkhash, imageSrc, config) match {
-            case Some(locallyStoredImage) => trace("Img Write successfull to disk"); Some(locallyStoredImage)
-            case None => trace("Unable to write contents to disk: " + imageSrc); None
-          }
-        }
-        case None => trace("Unable to fetch entity for: " + imageSrc); None
-      }
-    } catch {
-      case e: Exception => {
-        info(e, e.toString)
-        None
-      }
-    }
-
-
-  }
-
-  /**
   * returns what filename we think this file should be, lots of time you get sneaky gifs that pretend to be jpg's
    * or even have .jpg extensions, so we use ImageMagick to tell us the truth
   */
@@ -232,33 +189,6 @@ object ImageUtils extends Logging {
 
   }
 
-  def writeEntityContentsToDisk(entity: HttpEntity, linkhash: String, imageSrc: String, config: Configuration): Option[LocallyStoredImage] = {
-
-    val localSrcPath = getLocalFileName(linkhash, imageSrc, config)
-    val outstream: OutputStream = new FileOutputStream(localSrcPath)
-    val instream: InputStream = entity.getContent
-     trace("Content Length: " + entity.getContentLength)
-    try {
-      val fileCopyBytes = IOUtils.copy(instream, outstream)
-      trace(fileCopyBytes + " bytes copied to disk")
-    } catch {
-      case e: Exception => info(e, e.toString)
-    } finally {
-      try {
-        outstream.flush()
-        outstream.close()
-        instream.close()
-      } catch {
-        case e: Exception => info(e, e.toString)
-      }
-    }
-    //    entity.writeTo(outstream)
-    EntityUtils.consume(entity)
-    trace("Content Length: " + entity.getContentLength)
-    readExistingFileInfo(linkhash, imageSrc, config)
-
-  }
-
   def getLocalFileName(linkhash: String, imageSrc: String, config: Configuration) = {
     val imageHash = HashUtils.md5(imageSrc)
     config.localStoragePath + "/" + linkhash + "_" + imageHash
@@ -266,41 +196,6 @@ object ImageUtils extends Logging {
 
 
   def cleanImageSrcString(imgSrc: String): String = spaceRegex.replaceAllIn(imgSrc, "%20")
-
-  def fetchEntity(httpClient: HttpClient, imageSrc: String, config: Configuration): Option[HttpEntity] = {
-
-    URLHelper.tryToHttpGet(imageSrc) match {
-      case Some(httpget) => {
-        val localContext: HttpContext = new BasicHttpContext
-        localContext.setAttribute(ClientContext.COOKIE_STORE, HtmlFetcher.emptyCookieStore)
-        val response = try {
-          config.getHtmlFetcher.getHttpClient.execute(httpget, localContext)
-        }
-        catch {
-          case ex: Exception => throw new ImageFetchException(imageSrc, ex)
-        }
-
-        val respStatus = response.getStatusLine.getStatusCode
-
-
-        if (respStatus != 200) {
-          None
-        } else {
-          try {
-            Option(response.getEntity)
-          } catch {
-            case e: Exception => warn(e, e.toString); httpget.abort(); None
-          }
-        }
-
-      }
-      case None => {
-        warn("Unable to parse imageSrc: '" + imageSrc + "' into HttpGet")
-        None
-      }
-    }
-
-  }
 
 
 }

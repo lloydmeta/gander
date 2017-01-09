@@ -19,7 +19,6 @@
 package com.gravity.goose
 
 import scala.collection.JavaConversions._
-import network.{HtmlFetcher, AbstractHtmlFetcher}
 import org.jsoup.nodes.Element
 import com.github.nscala_time.time.Imports._
 import scala.beans.BeanProperty
@@ -125,14 +124,5 @@ class Configuration {
   def getOpenGraphDataExtractor: OpenGraphDataExtractor = {
     openGraphDataExtractor
   }
-
-  var htmlFetcher: AbstractHtmlFetcher = HtmlFetcher
-
-  def setHtmlFetcher(fetcher: AbstractHtmlFetcher) {
-    require(fetcher != null, "fetcher MUST NOT be null!")
-    this.htmlFetcher = fetcher
-  }
-
-  def getHtmlFetcher: AbstractHtmlFetcher = htmlFetcher
 
 }

@@ -1,6 +1,5 @@
 package com.gravity.goose.images
 
-import org.apache.http.client.HttpClient
 import com.gravity.goose.{Configuration, Article}
 import org.jsoup.nodes.{Element, Document}
 import java.util.regex.{Pattern, Matcher}
@@ -9,8 +8,7 @@ import java.net.{MalformedURLException, URL}
 import org.jsoup.select.Elements
 import scala.collection.JavaConversions._
 import java.util.ArrayList
-import collection.mutable.{ListBuffer, HashMap}
-import com.gravity.goose.utils.FileHelper
+import collection.mutable.ListBuffer
 import io.Source
 
 /**
@@ -19,7 +17,7 @@ import io.Source
 * Date: 9/22/11
 */
 
-class UpgradedImageIExtractor(httpClient: HttpClient, article: Article, config: Configuration) extends ImageExtractor {
+class UpgradedImageIExtractor(article: Article, config: Configuration) extends ImageExtractor {
 
   import UpgradedImageIExtractor._
 
@@ -57,13 +55,6 @@ class UpgradedImageIExtractor(httpClient: HttpClient, article: Article, config: 
       }
     }
 
-    checkForLargeImages(topNode, 0, 0) match {
-      case Some(image) => return image
-      case None => {
-        trace("No big images found")
-      }
-    }
-
     checkForMetaTag match {
       case Some(image) => return image
       case None => trace("No Meta Tag Images found")
@@ -86,63 +77,6 @@ class UpgradedImageIExtractor(httpClient: HttpClient, article: Article, config: 
     None
   }
 
-
-  /**
-  * although slow the best way to determine the best image is to download them and check the actual dimensions of the image when on disk
-  * so we'll go through a phased approach...
-  * 1. get a list of ALL images from the parent node
-  * 2. filter out any bad image names that we know of (gifs, ads, etc..)
-  * 3. do a head request on each file to make sure it meets our bare requirements
-  * 4. any images left over let's do a full GET request, download em to disk and check their dimensions
-  * 5. Score images based on different factors like height/width and possibly things like color density
-  *
-  * @param node
-  */
-  private def checkForLargeImages(node: Element, parentDepthLevel: Int, siblingDepthLevel: Int): Option[Image] = {
-    trace("Checking for large images - parent depth " + parentDepthLevel + " sibling depth: " + siblingDepthLevel)
-
-    getImageCandidates(node) match {
-      case Some(goodImages) => {
-        trace("checkForLargeImages: After findImagesThatPassByteSizeTest we have: " + goodImages.size + " at parent depth: " + parentDepthLevel)
-        val scoredImages = downloadImagesAndGetResults(goodImages, parentDepthLevel)
-        // get the high score image in a tuple
-        scoredImages.sortBy(-_._2).take(1).headOption match {
-          case Some(highScoreImage) => {
-            val mainImage = new Image
-            // mainImage.topImageNode = highScoreImage
-            mainImage.imageSrc = highScoreImage._1.imgSrc
-            mainImage.imageExtractionType = "bigimage"
-            mainImage.bytes = highScoreImage._1.bytes
-            mainImage.confidenceScore = if (scoredImages.size > 0) (100 / scoredImages.size) else 0
-            trace("IMAGE COMPLETE: High Score Image is: " + mainImage.imageSrc + " Score is: " + highScoreImage._2)
-            return Some(mainImage)
-          }
-          case None => {
-            trace("No good images found after filtering")
-            getDepthLevel(node, parentDepthLevel, siblingDepthLevel) match {
-              case Some(depthObj) => {
-                return checkForLargeImages(depthObj.node, depthObj.parentDepth, depthObj.siblingDepth)
-              }
-              case None => trace("Image iteration is over!")
-            }
-          }
-        }
-
-
-      }
-      case None => {
-        getDepthLevel(node, parentDepthLevel, siblingDepthLevel) match {
-          case Some(depthObj) => {
-            return checkForLargeImages(depthObj.node, depthObj.parentDepth, depthObj.siblingDepth)
-          }
-          case None => trace("Image iteration is over!")
-        }
-      }
-    }
-
-    None
-  }
-
   def getDepthLevel(node: Element, parentDepth: Int, siblingDepth: Int): Option[DepthTraversal] = {
     if (node == null) return None
 
@@ -158,62 +92,6 @@ class UpgradedImageIExtractor(httpClient: HttpClient, article: Article, config: 
         Some(DepthTraversal(siblingNode, parentDepth, siblingDepth + 1))
       }
     }
-  }
-
-  /**
-  * download the images to temp disk and set their dimensions
-  * <p/>
-  * we're going to score the images in the order in which they appear so images higher up will have more importance,
-  * we'll count the area of the 1st image as a score of 1 and then calculate how much larger or small each image after it is
-  * we'll also make sure to try and weed out banner type ad blocks that have big widths and small heights or vice versa
-  * so if the image is 3rd found in the dom it's sequence score would be 1 / 3 = .33 * diff in area from the first image
-  *
-  * @param images
-  * @return
-  */
-  private def downloadImagesAndGetResults(images: ArrayList[Element], depthLevel: Int): ListBuffer[(LocallyStoredImage, Float)] = {
-    val imageResults = new ListBuffer[(LocallyStoredImage, Float)]()
-    var initialArea: Float = 0
-    var cnt = 1.0f
-    val MIN_WIDTH = 50
-    val MIN_HEIGHT = 0
-
-    images.take(30).foreach((image: Element) => {
-      for {
-        locallyStoredImage <- getLocallyStoredImage(buildImagePath(image.attr("src")))
-        width = locallyStoredImage.width
-        if (width > MIN_WIDTH)
-        height = locallyStoredImage.height
-        if (height > MIN_HEIGHT)
-        fileExtension = locallyStoredImage.fileExtension
-        if (fileExtension != ".gif" && fileExtension != "NA")
-        imageSrc = locallyStoredImage.imgSrc
-        if ((depthLevel >= 1 && locallyStoredImage.width > 300) || depthLevel < 1)
-        if (!isBannerDimensions(width, height))
-      } {
-        val sequenceScore: Float = 1.0f / cnt
-        val area: Float = width * height
-        var totalScore: Float = 0
-        if (initialArea == 0) {
-          // give the initial image a little area boost as well
-          initialArea = area * 1.48f
-          totalScore = 1
-        }
-        else {
-          val areaDifference: Float = area / initialArea
-          totalScore = sequenceScore * areaDifference
-        }
-        trace("IMG: " + imageSrc + " Area is: " + area + " sequence score: " + sequenceScore + " totalScore: " + totalScore)
-        cnt += 1
-
-        imageResults += locallyStoredImage -> totalScore
-        cnt += 1
-      }
-    })
-
-
-
-    imageResults
   }
 
   def getAllImages: ArrayList[Element] = {
@@ -301,7 +179,6 @@ class UpgradedImageIExtractor(httpClient: HttpClient, article: Article, config: 
       n <- getNode(node)
       images <- getImagesFromNode(node)
       filteredImages <- filterBadNames(images)
-      goodImages <- findImagesThatPassByteSizeTest(filteredImages)
     } {
       return Some(filteredImages)
     }
@@ -309,50 +186,6 @@ class UpgradedImageIExtractor(httpClient: HttpClient, article: Article, config: 
 
   }
 
-  /**
-  * loop through all the images and find the ones that have the best bytez to even make them a candidate
-  *
-  * @param images
-  * @return
-  */
-  private def findImagesThatPassByteSizeTest(images: ArrayList[Element]): Option[ArrayList[Element]] = {
-    var cnt: Int = 0
-    val MAX_BYTES_SIZE: Int = 15728640
-    val goodImages: ArrayList[Element] = new ArrayList[Element]
-    images.foreach(image => {
-      try {
-        if (cnt > 30) {
-          trace("Abort! they have over 30 images near the top node: ")
-          return Some(goodImages)
-        }
-        val imageSrc = image.attr("src")
-        getLocallyStoredImage(buildImagePath(imageSrc)) match {
-          case Some(locallyStoredImage) => {
-
-            val bytes = locallyStoredImage.bytes
-            if ((bytes == 0 || bytes > minBytesForImages) && bytes < MAX_BYTES_SIZE) {
-              trace("findImagesThatPassByteSizeTest: Found potential image - size: " + bytes + " src: " + image.attr("src"))
-              goodImages.add(image)
-            } else {
-              trace("Removing image: " + image.attr("src"))
-              image.remove()
-            }
-
-          }
-          case None => trace(imageSrc + " unable to fetch")
-        }
-
-      } catch {
-        case e: Exception => warn(e, e.toString)
-      }
-      cnt += 1
-    })
-
-
-    trace(" Now leaving findImagesThatPassByteSizeTest")
-    if (goodImages == null || goodImages.isEmpty) None else Some(goodImages)
-
-  }
 
   def getNode(node: Element): Option[Element] = {
     if (node == null) None else Some(node)
@@ -378,14 +211,6 @@ class UpgradedImageIExtractor(httpClient: HttpClient, article: Article, config: 
         mainImage.imageExtractionType = "linktag"
         mainImage.confidenceScore = 100
 
-        getLocallyStoredImage(mainImage.imageSrc) match {
-          case Some(locallyStoredImage) => {
-            mainImage.bytes = locallyStoredImage.bytes
-            mainImage.height = locallyStoredImage.height
-            mainImage.width = locallyStoredImage.width
-          }
-          case None =>
-        }
         trace("link tag found, using it")
 
         return Some(mainImage)
@@ -419,16 +244,7 @@ class UpgradedImageIExtractor(httpClient: HttpClient, article: Article, config: 
         mainImage.imageSrc = imagePath
         mainImage.imageExtractionType = "opengraph"
         mainImage.confidenceScore = 100
-        getLocallyStoredImage(mainImage.imageSrc) match {
-          case Some(locallyStoredImage) => {
-            mainImage.bytes = locallyStoredImage.bytes
-            mainImage.height = locallyStoredImage.height
-            mainImage.width = locallyStoredImage.width
-          }
-          case None =>
-        }
         trace("open graph tag found, using it: %s".format(imagePath))
-
         return Some(mainImage)
       }
       None
@@ -441,11 +257,6 @@ class UpgradedImageIExtractor(httpClient: HttpClient, article: Article, config: 
     }
   }
 
-
-  /**
-  * returns the bytes of the image file on disk
-  */
-  def getLocallyStoredImage(imageSrc: String): Option[LocallyStoredImage] = ImageUtils.storeImageToLocalFile(httpClient, linkhash, imageSrc, config)
 
 
   def getCleanDomain = {
@@ -490,12 +301,6 @@ class UpgradedImageIExtractor(httpClient: HttpClient, article: Article, config: 
     mainImage.imageSrc = buildImagePath(knownImgSrc)
     mainImage.imageExtractionType = "known"
     mainImage.confidenceScore = 90
-
-    getLocallyStoredImage(buildImagePath(mainImage.imageSrc)).foreach(locallyStoredImage => {
-      mainImage.bytes = locallyStoredImage.bytes
-      mainImage.height = locallyStoredImage.height
-      mainImage.width = locallyStoredImage.width
-    })
 
     Some(mainImage)
   }
