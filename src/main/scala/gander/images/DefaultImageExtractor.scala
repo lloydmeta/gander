@@ -1,91 +1,87 @@
 /**
- * Licensed to Gravity.com under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  Gravity.com licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+  * Licensed to Gravity.com under one
+  * or more contributor license agreements.  See the NOTICE file
+  * distributed with this work for additional information
+  * regarding copyright ownership.  Gravity.com licenses this file
+  * to you under the Apache License, Version 2.0 (the
+  * "License"); you may not use this file except in compliance
+  * with the License.  You may obtain a copy of the License at
+  *
+  *     http://www.apache.org/licenses/LICENSE-2.0
+  *
+  * Unless required by applicable law or agreed to in writing, software
+  * distributed under the License is distributed on an "AS IS" BASIS,
+  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  * See the License for the specific language governing permissions and
+  * limitations under the License.
+  */
 package gander.images
 
 import org.jsoup.select.Elements
-import org.jsoup.nodes.{Element, Document}
-import gander.{Article, Configuration}
+import org.jsoup.nodes.{Document, Element}
+import gander.Configuration
 import java.util.ArrayList
+
 import scala.collection.JavaConversions._
 import gander.text.string
 import java.net.{MalformedURLException, URL}
-import java.util.regex.{Pattern, Matcher}
+import java.util.regex.{Matcher, Pattern}
 
 /**
-* Created by Jim Plush
-* User: jim
-* Date: 8/18/11
-*/
-
+  * Created by Jim Plush
+  * User: jim
+  * Date: 8/18/11
+  */
 case class DepthTraversal(node: Element, parentDepth: Int, siblingDepth: Int)
 
 /**
-* This image extractor will attempt to find the best image nearest the article.
-* Unfortunately this is a slow process since we're actually downloading the image itself
-* to inspect it's actual height/width and area metrics since most of the time these aren't
-* in the image tags themselves or can be falsified.
-* We'll weight the images in descending order depending on how high up they are compared to the top node content
-*
-* //todo this is a straight java to scala conversion, need to add the nicities of scala, all these null checks make me dizzy
-*/
-class StandardImageExtractor(article: Article, config: Configuration) extends ImageExtractor {
-
+  * This image extractor will attempt to find the best image nearest the article.
+  * Unfortunately this is a slow process since we're actually downloading the image itself
+  * to inspect it's actual height/width and area metrics since most of the time these aren't
+  * in the image tags themselves or can be falsified.
+  * We'll weight the images in descending order depending on how high up they are compared to the top node content
+  *
+  * //todo this is a straight java to scala conversion, need to add the nicities of scala, all these null checks make me dizzy
+  */
+class DefaultImageExtractor(linkHash: String,
+                            targetUrl: String,
+                            rawDoc: Document,
+                            config: Configuration)
+    extends ImageExtractor {
 
   /**
-  * holds the document that we're extracting the image from
-  */
+    * holds the document that we're extracting the image from
+    */
   private var doc: Document = null
 
   /**
-  * What's the minimum bytes for an image we'd accept is
-  */
+    * What's the minimum bytes for an image we'd accept is
+    */
   private var minBytesForImages: Int = 0
+
   /**
-  * location to store temporary image files if need be
-  */
+    * location to store temporary image files if need be
+    */
   private var tempStoragePath: String = null
 
   /**
-  * this lists all the known bad button names that we have
-  */
+    * this lists all the known bad button names that we have
+    */
   var matchBadImageNames: Matcher = null
-  val NODE_ID_FORMAT: String = "tag: %s class: %s ID: %s"
-  val KNOWN_IMG_DOM_NAMES = "yn-story-related-media" :: "cnn_strylccimg300cntr" :: "big_photo" :: "ap-smallphoto-a" :: Nil
+  val NODE_ID_FORMAT: String      = "tag: %s class: %s ID: %s"
+  val KNOWN_IMG_DOM_NAMES         = "yn-story-related-media" :: "cnn_strylccimg300cntr" :: "big_photo" :: "ap-smallphoto-a" :: Nil
 
   var sb: StringBuilder = new StringBuilder
   // create negative elements
-  sb.append(".html|.gif|.ico|button|twitter.jpg|facebook.jpg|ap_buy_photo|digg.jpg|digg.png|delicious.png|facebook.png|reddit.jpg|doubleclick|diggthis|diggThis|adserver|/ads/|ec.atdmt.com")
+  sb.append(
+    ".html|.gif|.ico|button|twitter.jpg|facebook.jpg|ap_buy_photo|digg.jpg|digg.png|delicious.png|facebook.png|reddit.jpg|doubleclick|diggthis|diggThis|adserver|/ads/|ec.atdmt.com")
   sb.append("|mediaplex.com|adsatt|view.atdmt")
   matchBadImageNames = Pattern.compile(sb.toString()).matcher(string.empty)
 
   /**
-  * holds the result of our image extraction
-  */
+    * holds the result of our image extraction
+    */
   val image = new Image
-  /**
-  * the webpage url that we're extracting content from
-  */
-  val targetUrl = article.finalUrl
-  /**
-  * stores a hash of our url for reference and image processing
-  */
-  val linkhash = article.linkhash
-
 
   override def getBestImage(doc: Document, topNode: Element): Image = {
     this.doc = doc
@@ -115,10 +111,10 @@ class StandardImageExtractor(article: Article, config: Configuration) extends Im
   }
 
   /**
-  * checks to see if we were able to find open graph tags on this page
-  *
-  * @return
-  */
+    * checks to see if we were able to find open graph tags on this page
+    *
+    * @return
+    */
   private def checkForOpenGraphTag: Boolean = {
     try {
       val meta: Elements = doc.select("meta[property~=og:image]")
@@ -136,8 +132,7 @@ class StandardImageExtractor(article: Article, config: Configuration) extends Im
         return true
       }
       false
-    }
-    catch {
+    } catch {
       case e: Exception => {
         e.printStackTrace()
         return false
@@ -146,10 +141,10 @@ class StandardImageExtractor(article: Article, config: Configuration) extends Im
   }
 
   /**
-  * checks to see if we were able to find open graph tags on this page
-  *
-  * @return
-  */
+    * checks to see if we were able to find open graph tags on this page
+    *
+    * @return
+    */
   private def checkForLinkTag: Boolean = {
     try {
       val meta: Elements = doc.select("link[rel~=image_src]")
@@ -166,8 +161,7 @@ class StandardImageExtractor(article: Article, config: Configuration) extends Im
         return true
       }
       false
-    }
-    catch {
+    } catch {
       case e: Exception => {
         logger.error(e.toString, e)
         false
@@ -189,12 +183,11 @@ class StandardImageExtractor(article: Article, config: Configuration) extends Im
     }
   }
 
-
   def getImageCandidates(node: Element): Option[ArrayList[Element]] = {
 
     for {
-      n <- getNode(node)
-      images <- getImagesFromNode(node)
+      n              <- getNode(node)
+      images         <- getImagesFromNode(node)
       filteredImages <- filterBadNames(images)
     } {
       return Some(filteredImages)
@@ -206,7 +199,9 @@ class StandardImageExtractor(article: Article, config: Configuration) extends Im
   def getDepthLevel(node: Element, parentDepth: Int, siblingDepth: Int): Option[DepthTraversal] = {
     val MAX_PARENT_DEPTH = 2
     if (parentDepth > MAX_PARENT_DEPTH) {
-      trace(logPrefix + "ParentDepth is greater than %d, aborting depth traversal".format(MAX_PARENT_DEPTH))
+      trace(
+        logPrefix + "ParentDepth is greater than %d, aborting depth traversal".format(
+          MAX_PARENT_DEPTH))
       None
     } else {
       try {
@@ -231,18 +226,17 @@ class StandardImageExtractor(article: Article, config: Configuration) extends Im
   }
 
   /**
-  * takes a list of image elements and filters out the ones with bad names
-  *
-  * @param images
-  * @return
-  */
+    * takes a list of image elements and filters out the ones with bad names
+    *
+    * @param images
+    * @return
+    */
   private def filterBadNames(images: Elements): Option[ArrayList[Element]] = {
     val goodImages: ArrayList[Element] = new ArrayList[Element]
     for (image <- images) {
       if (this.isOkImageFileName(image)) {
         goodImages.add(image)
-      }
-      else {
+      } else {
         image.remove()
       }
     }
@@ -250,10 +244,10 @@ class StandardImageExtractor(article: Article, config: Configuration) extends Im
   }
 
   /**
-  * will check the image src against a list of bad image files we know of like buttons, etc...
-  *
-  * @return
-  */
+    * will check the image src against a list of bad image files we know of like buttons, etc...
+    *
+    * @return
+    */
   private def isOkImageFileName(imageNode: Element): Boolean = {
     var imgSrc: String = imageNode.attr("src")
     if (string.isNullOrEmpty(imgSrc)) {
@@ -270,11 +264,11 @@ class StandardImageExtractor(article: Article, config: Configuration) extends Im
   }
 
   /**
-  * in here we check for known image contains from sites we've checked out like yahoo, techcrunch, etc... that have
-  * known  places to look for good images.
-  * //todo enable this to use a series of settings files so people can define what the image ids/classes are on specific sites
-  */
-  def checkForKnownElements() {
+    * in here we check for known image contains from sites we've checked out like yahoo, techcrunch, etc... that have
+    * known  places to look for good images.
+    * //todo enable this to use a series of settings files so people can define what the image ids/classes are on specific sites
+    */
+  def checkForKnownElements(): Unit = {
 
     var knownImage: Element = null
     trace(logPrefix + "Checking for known images from large sites")
@@ -282,9 +276,9 @@ class StandardImageExtractor(article: Article, config: Configuration) extends Im
     for (knownName <- KNOWN_IMG_DOM_NAMES) {
 
       try {
-        var known: Element = article.rawDoc.getElementById(knownName)
+        var known: Element = rawDoc.getElementById(knownName)
         if (known == null) {
-          known = article.rawDoc.getElementsByClass(knownName).first
+          known = rawDoc.getElementsByClass(knownName).first
         }
         if (known != null) {
           val mainImage: Element = known.getElementsByTag("img").first
@@ -296,8 +290,7 @@ class StandardImageExtractor(article: Article, config: Configuration) extends Im
           }
         }
 
-      }
-      catch {
+      } catch {
         case e: NullPointerException => {
           if (logger.isDebugEnabled) {
             logger.debug(e.toString, e)
@@ -310,8 +303,7 @@ class StandardImageExtractor(article: Article, config: Configuration) extends Im
       this.image.imageSrc = this.buildImagePath(knownImgSrc)
       this.image.imageExtractionType = "known"
       this.image.confidenceScore = 90
-    }
-    else {
+    } else {
       if (logger.isDebugEnabled) {
         logger.debug("No known images found")
       }
@@ -320,21 +312,20 @@ class StandardImageExtractor(article: Article, config: Configuration) extends Im
   }
 
   /**
-  * This method will take an image path and build out the absolute path to that image
-  * using the initial url we crawled so we can find a link to the image if they use relative urls like ../myimage.jpg
-  *
-  * @param image
-  * @return
-  */
+    * This method will take an image path and build out the absolute path to that image
+    * using the initial url we crawled so we can find a link to the image if they use relative urls like ../myimage.jpg
+    *
+    * @param image
+    * @return
+    */
   private def buildImagePath(image: String): String = {
-    var pageURL: URL = null
+    var pageURL: URL     = null
     var newImage: String = image.replace(" ", "%20")
     try {
       pageURL = new URL(this.targetUrl)
       var imageURL: URL = new URL(pageURL, image)
       newImage = imageURL.toString
-    }
-    catch {
+    } catch {
       case e: MalformedURLException => {
         logger.error("Unable to get Image Path: " + image)
       }
@@ -343,12 +334,12 @@ class StandardImageExtractor(article: Article, config: Configuration) extends Im
   }
 
   /**
-  * returns true if we think this is kind of a bannery dimension
-  * like 600 / 100 = 6 may be a fishy dimension for a good image
-  *
-  * @param width
-  * @param height
-  */
+    * returns true if we think this is kind of a bannery dimension
+    * like 600 / 100 = 6 may be a fishy dimension for a good image
+    *
+    * @param width
+    * @param height
+    */
   private def isBannerDimensions(width: Int, height: Int): Boolean = {
     if (width == height) {
       return false
@@ -372,7 +363,7 @@ class StandardImageExtractor(article: Article, config: Configuration) extends Im
     minBytesForImages
   }
 
-  def setMinBytesForImages(minBytesForImages: Int) {
+  def setMinBytesForImages(minBytesForImages: Int): Unit = {
     this.minBytesForImages = minBytesForImages
   }
 
@@ -380,9 +371,8 @@ class StandardImageExtractor(article: Article, config: Configuration) extends Im
     tempStoragePath
   }
 
-  def setTempStoragePath(tempStoragePath: String) {
+  def setTempStoragePath(tempStoragePath: String): Unit = {
     this.tempStoragePath = tempStoragePath
   }
-
 
 }

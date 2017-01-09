@@ -1,63 +1,64 @@
 /**
- * Licensed to Gravity.com under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  Gravity.com licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
+  * Licensed to Gravity.com under one
+  * or more contributor license agreements.  See the NOTICE file
+  * distributed with this work for additional information
+  * regarding copyright ownership.  Gravity.com licenses this file
+  * to you under the Apache License, Version 2.0 (the
+  * "License"); you may not use this file except in compliance
+  * with the License.  You may obtain a copy of the License at
+  *
+  *     http://www.apache.org/licenses/LICENSE-2.0
+  *
+  * Unless required by applicable law or agreed to in writing, software
+  * distributed under the License is distributed on an "AS IS" BASIS,
+  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  * See the License for the specific language governing permissions and
+  * limitations under the License.
+  */
 package gander.utils
 
 import gander.text.{StringReplacement, HashUtils}
 import java.net.{URI, MalformedURLException, URL}
-import java.io.{StringWriter,PrintWriter}
+import java.io.{StringWriter, PrintWriter}
 
 /**
- * Created by Jim Plush
- * User: jim
- * Date: 8/14/11
- */
-
+  * Created by Jim Plush
+  * User: jim
+  * Date: 8/14/11
+  */
 case class ParsingCandidate(urlString: String, linkhash: String, url: URL)
 
 object URLHelper extends Logging {
 
-  private val ESCAPED_FRAGMENT_REPLACEMENT: StringReplacement = StringReplacement.compile("#!", "?_escaped_fragment_=")
+  private val ESCAPED_FRAGMENT_REPLACEMENT: StringReplacement =
+    StringReplacement.compile("#!", "?_escaped_fragment_=")
 
   /**
-  * returns a ParseCandidate object  that is a valid URL
-  */
+    * returns a ParseCandidate object  that is a valid URL
+    */
   def getCleanedUrl(urlToCrawl: String): Option[ParsingCandidate] = {
 
     val finalURL =
-      if (urlToCrawl.contains("#!")) ESCAPED_FRAGMENT_REPLACEMENT.replaceAll(urlToCrawl) else urlToCrawl
+      if (urlToCrawl.contains("#!")) ESCAPED_FRAGMENT_REPLACEMENT.replaceAll(urlToCrawl)
+      else urlToCrawl
 
     try {
-      val url = new URL(finalURL)
+      val url      = new URL(finalURL)
       val linkhash = HashUtils.md5(finalURL)
       Some(ParsingCandidate(finalURL, linkhash, url))
-    }
-    catch {
+    } catch {
       case e: MalformedURLException => {
         warn("{0} - is a malformed URL and cannot be processed", urlToCrawl)
         None
       }
       case unknown: Exception => {
-        critical("Unable to process URL: {0} due to an unexpected exception:\n\tException Type: {1}\n\tException Message: {2}\n\tException Stack:\n{3}",
+        critical(
+          "Unable to process URL: {0} due to an unexpected exception:\n\tException Type: {1}\n\tException Message: {2}\n\tException Stack:\n{3}",
           urlToCrawl,
           unknown.getClass.getCanonicalName,
           unknown.getMessage,
-          getStackTraceString(unknown))
+          getStackTraceString(unknown)
+        )
 
         None
       }
@@ -66,11 +67,10 @@ object URLHelper extends Logging {
 
   def getStackTraceString(e: Exception) = {
     val stringWriter = new StringWriter
-    val printWriter = new PrintWriter(stringWriter)
+    val printWriter  = new PrintWriter(stringWriter)
     e.printStackTrace(printWriter)
     stringWriter.toString
   }
-
 
   def tryToURL(url: String): Option[URL] = {
     val finalUrl = if (url.contains("#!")) {

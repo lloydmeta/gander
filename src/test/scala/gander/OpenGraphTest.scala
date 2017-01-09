@@ -16,22 +16,30 @@ class OpenGraphTest {
 <meta property="og:image" content="http://i.telegraph.co.uk/multimedia/archive/02018/Kismot-Killer_2018476a.jpg" />
 <meta property="og:type" content="article" />
      */
-    val url: String = "http://www.telegraph.co.uk/foodanddrink/foodanddrinknews/8808120/Worlds-hottest-chilli-contest-leaves-two-in-hospital.html"
+    val url: String =
+      "http://www.telegraph.co.uk/foodanddrink/foodanddrinknews/8808120/Worlds-hottest-chilli-contest-leaves-two-in-hospital.html"
 
     val text = TestUtils.getHtml("telegraph.txt")
-    val article =  {
+    val article = {
       val goose = new Gander(config)
       goose.extractContent(url, text)
-    }
-    assertEquals("og:description was not as expected!", article.openGraphData.description,
-      "A 'world's hottest chilli' competition at a curry restaurant left two people   in hospital.")
-    assertEquals("og:title was not as expected!", article.openGraphData.title,
-      "World's hottest chilli contest leaves two in hospital")
-    assertEquals("og:url was not as expected!", article.openGraphData.url,
-      "http://www.telegraph.co.uk/foodanddrink/foodanddrinknews/8808120/Worlds-hottest-chilli-contest-leaves-two-in-hospital.html")
-    assertEquals("og:image was not as expected!", article.openGraphData.image,
-      "http://i.telegraph.co.uk/multimedia/archive/02018/Kismot-Killer_2018476a.jpg")
-    assertEquals("og:type was not as expected!", article.openGraphData.ogType,
-      "article")
+    }.get
+    assertEquals(
+      "og:description was not as expected!",
+      article.openGraphData.description.get,
+      "A 'world's hottest chilli' competition at a curry restaurant left two people   in hospital."
+    )
+    assertEquals("og:title was not as expected!",
+                 article.openGraphData.title.get,
+                 "World's hottest chilli contest leaves two in hospital")
+    assertEquals(
+      "og:url was not as expected!",
+      article.openGraphData.url.get,
+      "http://www.telegraph.co.uk/foodanddrink/foodanddrinknews/8808120/Worlds-hottest-chilli-contest-leaves-two-in-hospital.html"
+    )
+    assertEquals("og:image was not as expected!",
+                 article.openGraphData.image.get,
+                 "http://i.telegraph.co.uk/multimedia/archive/02018/Kismot-Killer_2018476a.jpg")
+    assertEquals("og:type was not as expected!", article.openGraphData.ogType.get, "article")
   }
 }

@@ -12,7 +12,7 @@ Copyright [2014] Robby Pond
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
- */
+  */
 package gander.extractors
 
 import org.jsoup.nodes.Element
@@ -21,31 +21,32 @@ import scala.collection.JavaConversions._
 import gander.opengraph.OpenGraphData
 import org.joda.time.format.ISODateTimeFormat
 
+import scala.util.Try
+
 class OpenGraphDataExtractor extends Extractor[OpenGraphData] {
 
+  private val dateParser = ISODateTimeFormat.dateTimeParser
+
   def extract(rootElement: Element): OpenGraphData = {
-    val openGraphData: OpenGraphData = new OpenGraphData
-    val dateParser = ISODateTimeFormat.dateTimeParser
-    for(el <- rootElement.select("meta")) {
-      val property = el.attr("property")
-      val value = el.attr("content")
-      property match {
-        case "og:title" => openGraphData.title = value
-        case "og:site_name" => openGraphData.siteName = value
-        case "og:url" => openGraphData.url = value
-        case "og:description" => openGraphData.description = value
-        case "og:image" => openGraphData.image = value
-        case "og:type" => openGraphData.ogType = value
-        case "og:locale" => openGraphData.locale = value
-        case "article:author" => openGraphData.author = value
-        case "article:publisher" => openGraphData.publisher = value
-        case "article:section" => openGraphData.section = value
-        case "article:tag" => openGraphData.tags ++= value.split(",").map(_.trim)
-        case "article:published_time" => openGraphData.publishedTime = dateParser.parseDateTime(value)
-        case "article:modified_time" => openGraphData.modifiedTime = dateParser.parseDateTime(value)
-        case _ => ()
-      }
-    }
-    openGraphData
+    val metas = rootElement.select("meta")
+    def get(property: String): Option[String] =
+      metas.find(_.attr("property") == property).map(_.attr("content"))
+    OpenGraphData(
+      title = get("og:title"),
+      siteName = get("og:site_name"),
+      url = get("og:url"),
+      description = get("og:description"),
+      image = get("og:image"),
+      ogType = get("og:type"),
+      locale = get("og:locale"),
+      author = get("article:author"),
+      publisher = get("article:publisher"),
+      section = get("article:section"),
+      tags = get("article:tag").toSeq.flatMap(_.split(',').map(_.trim)).toSet,
+      publishedTime =
+        get("article:published_time").flatMap(ds => Try(dateParser.parseDateTime(ds)).toOption),
+      modifiedTime =
+        get("article:modified_time").flatMap(ds => Try(dateParser.parseDateTime(ds)).toOption)
+    )
   }
 }

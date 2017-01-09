@@ -5,11 +5,10 @@ import org.junit.Assert._
 import gander.text.StopWords
 
 /**
-* Created by Jim Plush
-* User: jim
-* Date: 8/16/11
-*/
-
+  * Created by Jim Plush
+  * User: jim
+  * Date: 8/16/11
+  */
 class FileHelperTest {
 
   @Test
