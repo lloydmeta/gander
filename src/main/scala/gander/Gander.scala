@@ -47,7 +47,8 @@ class Gander(config: Configuration = Configuration.Default) {
       doc <- Crawler.getDocument(rawHtml)
       cleanedDoc = Gander.docCleaner.clean(doc)
       topNode <- config.contentExtractor.calculateBestNodeBasedOnClustering(cleanedDoc)
-    } yield StandardOutputFormatter.getFormattedText(topNode)
+      cleanedTopNode = config.contentExtractor.postExtractionCleanup(topNode)
+    } yield StandardOutputFormatter.getFormattedText(cleanedTopNode)
   }
 
 }
