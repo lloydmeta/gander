@@ -4,11 +4,7 @@ version := "0.0.2-SNAPSHOT"
 
 organization := "com.beachape"
 
-homepage := Some(url("https://github.com/lloydmeta/gander"))
-
 description := "Html Content / Article Extractor in Scala"
-
-licenses += "Apache2" -> url("http://www.apache.org/licenses/")
 
 scalacOptions ++= Seq("-unchecked", "-deprecation")
 
