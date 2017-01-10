@@ -264,7 +264,7 @@ trait ContentExtractor {
       }
     }
     printTraceLog(topNode)
-    if (topNode == null) None else Some(topNode)
+    Option(topNode)
   }
 
   def printTraceLog(topNode: Element): Unit = {
