@@ -1,6 +1,6 @@
 name := "gander"
 
-version := "0.0.3"
+version := "0.0.4-SNAPSHOT"
 
 organization := "com.beachape"
 
