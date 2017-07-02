@@ -55,7 +55,6 @@ class Gander(config: Configuration = Configuration.Default) {
 
 object Gander {
 
-  private val logPrefix  = "goose: "
   private val docCleaner = new StandardDocumentCleaner
 
 }

@@ -17,7 +17,7 @@ package gander.extractors
 
 import org.jsoup.nodes.Element
 
-import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
 import gander.opengraph.OpenGraphData
 import org.joda.time.format.ISODateTimeFormat
 
@@ -30,7 +30,7 @@ class OpenGraphDataExtractor extends Extractor[OpenGraphData] {
   def extract(rootElement: Element): OpenGraphData = {
     val metas = rootElement.select("meta")
     def get(property: String): Option[String] =
-      metas.find(_.attr("property") == property).map(_.attr("content"))
+      metas.asScala.find(_.attr("property") == property).map(_.attr("content"))
     OpenGraphData(
       title = get("og:title"),
       siteName = get("og:site_name"),

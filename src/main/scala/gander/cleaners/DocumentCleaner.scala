@@ -18,12 +18,12 @@
 package gander.cleaners
 
 import gander.utils.Logging
-import java.util.regex.{Matcher, Pattern}
+import java.util.regex.Pattern
 
 import org.jsoup.nodes.{Document, Element, Node, TextNode}
 import gander.text.ReplaceSequence
 
-import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
 import org.jsoup.select.{Collector, Elements, TagsEvaluator}
 
 import scala.collection.mutable.ListBuffer
@@ -66,9 +66,9 @@ trait DocumentCleaner {
     val ems: Elements = doc.getElementsByTag("em")
 
     for {
-      node <- ems
+      node <- ems.asScala
       images: Elements = node.getElementsByTag("img")
-      if (images.size == 0)
+      if images.size == 0
     } {
       val tn: TextNode = new TextNode(node.text, doc.baseUri)
       node.replaceWith(tn)
@@ -83,7 +83,7 @@ trait DocumentCleaner {
     */
   private def cleanUpSpanTagsInParagraphs(doc: Document) = {
     val spans: Elements = doc.getElementsByTag("span")
-    for (item <- spans) {
+    for (item <- spans.asScala) {
       if (item.parent().nodeName() == "p") {
         val tn: TextNode = new TextNode(item.text, doc.baseUri)
         item.replaceWith(tn)
@@ -99,7 +99,7 @@ trait DocumentCleaner {
   private def removeDropCaps(doc: Document): Document = {
     val items: Elements = doc.select("span[class~=(dropcap|drop_cap)]")
     trace(items.size + " dropcap tags removed")
-    for (item <- items) {
+    for (item <- items.asScala) {
       val tn: TextNode = new TextNode(item.text, doc.baseUri)
       item.replaceWith(tn)
     }
@@ -109,14 +109,13 @@ trait DocumentCleaner {
   private def removeScriptsAndStyles(doc: Document): Document = {
 
     val scripts: Elements = doc.getElementsByTag("script")
-    for (item <- scripts) {
+    for (item <- scripts.asScala) {
       item.remove()
     }
     trace(scripts.size + " script tags removed")
 
     val styles: Elements = doc.getElementsByTag("style")
-    import scala.collection.JavaConversions._
-    for (style <- styles) {
+    for (style <- styles.asScala) {
       style.remove()
     }
     trace(styles.size + " style tags removed")
@@ -128,8 +127,7 @@ trait DocumentCleaner {
     val naughtyList: Elements = children.select(queryNaughtyIDs)
     trace(naughtyList.size + " naughty ID elements found")
 
-    import scala.collection.JavaConversions._
-    for (node <- naughtyList) {
+    for (node <- naughtyList.asScala) {
       trace("Removing node with id: " + node.id)
       removeNode(node)
     }
@@ -141,7 +139,7 @@ trait DocumentCleaner {
 
     trace(naughtyClasses.size + " naughty CLASS elements found")
 
-    for (node <- naughtyClasses) {
+    for (node <- naughtyClasses.asScala) {
       trace("Removing node with class: " + node.className)
       removeNode(node)
     }
@@ -153,7 +151,7 @@ trait DocumentCleaner {
 
     trace(naughtyList5.size + " naughty Name elements found")
 
-    for (node <- naughtyList5) {
+    for (node <- naughtyList5.asScala) {
 
       trace(
         "Removing node with class: " + node.attr("class") + " id: " + node.id + " name: " + node
@@ -175,13 +173,13 @@ trait DocumentCleaner {
 
       trace(naughtyList.size + " ID elements found against pattern: " + pattern)
 
-      for (node <- naughtyList) {
+      for (node <- naughtyList.asScala) {
         removeNode(node)
       }
       val naughtyList3: Elements = doc.getElementsByAttributeValueMatching("class", pattern)
       trace(naughtyList3.size + " CLASS elements found against pattern: " + pattern)
 
-      for (node <- naughtyList3) {
+      for (node <- naughtyList3.asScala) {
         removeNode(node)
       }
     } catch {
@@ -212,12 +210,12 @@ trait DocumentCleaner {
 
     val selected = Collector.collect(wantedTags, doc)
 
-    for (elem <- selected) {
+    for (elem <- selected.asScala) {
       if (Collector.collect(blockElemementTags, elem).isEmpty) {
         replaceElementsWithPara(doc, elem)
       } else {
         val replacements = getReplacementNodes(doc, elem)
-        elem.children().foreach(_.remove())
+        elem.children().asScala.foreach(_.remove())
         replacements.foreach(n => {
           try {
             elem.appendChild(n)
@@ -227,48 +225,6 @@ trait DocumentCleaner {
         })
       }
     }
-
-    doc
-  }
-
-  private def convertDivsToParagraphs(doc: Document, domType: String): Document = {
-    trace("Starting to replace bad divs...")
-    var badDivs: Int            = 0
-    var convertedTextNodes: Int = 0
-    val divs: Elements          = doc.getElementsByTag(domType)
-    var divIndex                = 0
-
-    for (div <- divs) {
-      try {
-        val divToPElementsMatcher: Matcher = divToPElementsPattern.matcher(div.html.toLowerCase)
-        if (divToPElementsMatcher.find == false) {
-          replaceElementsWithPara(doc, div)
-          badDivs += 1;
-        } else {
-          val replaceNodes = getReplacementNodes(doc, div)
-
-          div.children().foreach(_.remove())
-          replaceNodes.foreach(node => {
-
-            try {
-              div.appendChild(node)
-            } catch {
-              case e: Exception => info(e, e.toString)
-            }
-
-          })
-        }
-      } catch {
-        case e: NullPointerException => {
-          logger.error(e.toString)
-        }
-      }
-      divIndex += 1
-    }
-
-    trace(
-      "Found %d total %s with %d bad ones replaced and %d textnodes converted inside %s"
-        .format(divs.size, domType, badDivs, convertedTextNodes, domType))
 
     doc
   }
@@ -293,8 +249,7 @@ trait DocumentCleaner {
     val nodesToRemove = new ListBuffer[Node]()
 
     for {
-
-      kid <- div.childNodes()
+      kid <- div.childNodes().asScala
     } {
 
       if (kid.nodeName() == "p" && replacementText.size > 0) {

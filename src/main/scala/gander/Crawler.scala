@@ -132,7 +132,7 @@ object Crawler extends Logging {
       Some(Jsoup.parse(rawHtml))
     } catch {
       case NonFatal(e) => {
-        trace("Unable to parse properly into JSoup Doc", e)
+        trace(s"$logPrefix Unable to parse properly into JSoup Doc", e)
         None
       }
     }

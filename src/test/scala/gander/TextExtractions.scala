@@ -142,23 +142,23 @@ class TextExtractions {
                                    expectedDescription = description)
 
     val expectedTags = "Federal Open Market Committee" ::
-        "Federal Reserve" ::
-          "Federal Reserve Bank Of Kansas City" ::
-            "Financial Crisis" ::
-              "Financial Reform" ::
-                "Financial Regulation" ::
-                  "Financial Regulatory Reform" ::
-                    "Fomc" ::
-                      "Great Recession" ::
-                        "Interest Rates" ::
-                          "Kansas City Fed" ::
-                            "Monetary Policy" ::
-                              "The Financial Fix" ::
-                                "Thomas Hoenig" ::
-                                  "Too Big To Fail" ::
-                                    "Wall Street Reform" ::
-                                      "Business News" ::
-                                        Nil
+      "Federal Reserve" ::
+      "Federal Reserve Bank Of Kansas City" ::
+      "Financial Crisis" ::
+      "Financial Reform" ::
+      "Financial Regulation" ::
+      "Financial Regulatory Reform" ::
+      "Fomc" ::
+      "Great Recession" ::
+      "Interest Rates" ::
+      "Kansas City Fed" ::
+      "Monetary Policy" ::
+      "The Financial Fix" ::
+      "Thomas Hoenig" ::
+      "Too Big To Fail" ::
+      "Wall Street Reform" ::
+      "Business News" ::
+      Nil
     assertNotNull("Tags should not be NULL!", article.tags)
     assertTrue("Tags should not be empty!", article.tags.size > 0)
 
@@ -187,7 +187,8 @@ class TextExtractions {
     assertTrue(
       "Extraction contains proper body text",
       text.contains(
-        """The biggest projects have been the slowest to start. None of the $17.5 billion for incentive payments for doctors and hospitals to start using electronic health records has been spent yet, because rules for payment were finalized only in July. A few recipients of $7.2 billion in grants allocated to the expansion of broadband Internet services have started laying cables, but the rest are still busy with pre-construction work, such as environmental assessments, local approvals to attach fiber to utility poles, permits for rights of way and hiring subcontractors."""))
+        """The biggest projects have been the slowest to start. None of the $17.5 billion for incentive payments for doctors and hospitals to start using electronic health records has been spent yet, because rules for payment were finalized only in July. A few recipients of $7.2 billion in grants allocated to the expansion of broadband Internet services have started laying cables, but the rest are still busy with pre-construction work, such as environmental assessments, local approvals to attach fiber to utility poles, permits for rights of way and hiring subcontractors.""")
+    )
   }
 
   @Test

@@ -107,8 +107,8 @@ class ReplaceSequence {
   def replaceAll(input: String): String = {
     if (string.isNullOrEmpty(input)) return string.empty
     var mutatedString = input
-    import scala.collection.JavaConversions._
-    for (rp <- replacements) {
+    import scala.collection.JavaConverters._
+    for (rp <- replacements.asScala) {
       mutatedString = rp.replaceAll(mutatedString)
     }
     mutatedString

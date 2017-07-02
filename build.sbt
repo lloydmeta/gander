@@ -6,6 +6,10 @@ organization := "com.beachape"
 
 description := "Html Content / Article Extractor in Scala"
 
+crossScalaVersions := Seq("2.10.6", "2.11.11", "2.12.2")
+
+crossVersion := CrossVersion.binary
+
 scalacOptions ++= Seq("-unchecked", "-deprecation")
 
 libraryDependencies ++= Seq(
@@ -87,6 +91,4 @@ pomExtra := (
     </developers>
 )
 
-reformatOnCompileSettings
-
-scalafmtConfig := Some(file(".scalafmt.conf"))
+scalafmtOnCompile := true

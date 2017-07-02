@@ -21,7 +21,7 @@ import org.jsoup.nodes._
 import org.apache.commons.lang3.StringEscapeUtils
 import org.jsoup.select.Elements
 import gander.text.StopWords
-import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
 import org.slf4j.Logger
 
 /**
@@ -38,7 +38,7 @@ trait OutputFormatter {
   def logger: Logger
 
   private def selectElements(query: String, topNode: Element): Elements = topNode match {
-    case null => new Elements(List.empty[Element])
+    case null => new Elements(List.empty[Element].asJava)
     case n    => n.select(query)
   }
 
@@ -66,6 +66,7 @@ trait OutputFormatter {
     case node => {
       node
         .children()
+        .asScala
         .map((e: Element) => {
           StringEscapeUtils.unescapeHtml4(e.text).trim
         })
@@ -84,7 +85,7 @@ trait OutputFormatter {
       val baseUri = topNode.baseUri()
 
       val links = topNode.getElementsByTag("a")
-      for (item <- links) {
+      for (item <- links.asScala) {
         if (item.getElementsByTag("img").isEmpty) {
           val tn = new TextNode(item.text, baseUri)
           item.replaceWith(tn)
@@ -107,7 +108,7 @@ trait OutputFormatter {
       }
 
     val gravityItems = selectElements("*[gravityScore]", topNode)
-    for (item <- gravityItems) {
+    for (item <- gravityItems.asScala) {
       val score = tryInt(item.attr("gravityScore"))
       if (score < 1) {
         item.remove()
@@ -123,19 +124,19 @@ trait OutputFormatter {
     if (topNode != null) {
       val baseUri = topNode.baseUri()
       val bolds   = topNode.getElementsByTag("b")
-      for (item <- bolds) {
+      for (item <- bolds.asScala) {
         val tn = new TextNode(getTagCleanedText(item), baseUri)
         item.replaceWith(tn)
       }
 
       val strongs = topNode.getElementsByTag("strong")
-      for (item <- strongs) {
+      for (item <- strongs.asScala) {
         val tn = new TextNode(getTagCleanedText(item), baseUri)
         item.replaceWith(tn)
       }
 
       val italics = topNode.getElementsByTag("i")
-      for (item <- italics) {
+      for (item <- italics.asScala) {
         val tn = new TextNode(getTagCleanedText(item), baseUri)
         item.replaceWith(tn)
 
@@ -146,7 +147,7 @@ trait OutputFormatter {
   private def getTagCleanedText(item: Node): String = {
     val sb = new StringBuilder()
 
-    item.childNodes().foreach {
+    item.childNodes().asScala.foreach {
       case childText: TextNode => {
         sb.append(childText.getWholeText)
       }
@@ -171,7 +172,7 @@ trait OutputFormatter {
 
       val allNodes = topNode.getAllElements
 
-      for (el <- allNodes) {
+      for (el <- allNodes.asScala) {
         try {
           val stopWords = StopWords.getStopWordCount(el.text)
           if (stopWords.getStopWordCount < 3 && el.getElementsByTag("object").size == 0 && el

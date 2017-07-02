@@ -22,7 +22,7 @@ import org.jsoup.nodes.{Document, Element}
 import gander.Configuration
 import java.util.ArrayList
 
-import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
 import gander.text.string
 import java.net.{MalformedURLException, URL}
 import java.util
@@ -53,8 +53,7 @@ class DefaultImageExtractor(targetUrl: String, protected val doc: Document, conf
   /**
     * this lists all the known bad button names that we have
     */
-  private val NODE_ID_FORMAT: String = "tag: %s class: %s ID: %s"
-  private val KNOWN_IMG_DOM_NAMES    = "yn-story-related-media" :: "cnn_strylccimg300cntr" :: "big_photo" :: "ap-smallphoto-a" :: Nil
+  private val KNOWN_IMG_DOM_NAMES = "yn-story-related-media" :: "cnn_strylccimg300cntr" :: "big_photo" :: "ap-smallphoto-a" :: Nil
 
   private val matchBadImageNames = {
     val s =
@@ -81,8 +80,7 @@ class DefaultImageExtractor(targetUrl: String, protected val doc: Document, conf
   private def checkForOpenGraphTag: Option[Image] = {
     try {
       val meta: Elements = doc.select("meta[property~=og:image]")
-      import scala.collection.JavaConversions._
-      for (item <- meta) {
+      for (item <- meta.asScala) {
         if (item.attr("content").length < 1) {
           return None
         }
@@ -113,9 +111,8 @@ class DefaultImageExtractor(targetUrl: String, protected val doc: Document, conf
     */
   private def checkForLinkTag: Option[Image] = {
     try {
-      import scala.collection.JavaConversions._
       val meta: Elements = doc.select("link[rel~=image_src]")
-      for (item <- meta) {
+      for (item <- meta.asScala) {
         if (item.attr("href").length < 1) {
           return None
         }
@@ -197,7 +194,7 @@ class DefaultImageExtractor(targetUrl: String, protected val doc: Document, conf
     */
   private def filterBadNames(images: Elements): Option[util.ArrayList[Element]] = {
     val goodImages: util.ArrayList[Element] = new util.ArrayList[Element]
-    for (image <- images) {
+    for (image <- images.asScala) {
       if (this.isOkImageFileName(image)) {
         goodImages.add(image)
       } else {
@@ -213,7 +210,7 @@ class DefaultImageExtractor(targetUrl: String, protected val doc: Document, conf
     * @return
     */
   private def isOkImageFileName(imageNode: Element): Boolean = {
-    var imgSrc: String = imageNode.attr("src")
+    val imgSrc: String = imageNode.attr("src")
     if (string.isNullOrEmpty(imgSrc)) {
       return false
     }
@@ -295,32 +292,6 @@ class DefaultImageExtractor(targetUrl: String, protected val doc: Document, conf
         image.replace(" ", "%20")
       }
     }
-  }
-
-  /**
-    * returns true if we think this is kind of a bannery dimension
-    * like 600 / 100 = 6 may be a fishy dimension for a good image
-    *
-    * @param width
-    * @param height
-    */
-  private def isBannerDimensions(width: Int, height: Int): Boolean = {
-    if (width == height) {
-      return false
-    }
-    if (width > height) {
-      val diff: Float = width.toFloat / height.toFloat
-      if (diff > 5) {
-        return true
-      }
-    }
-    if (height > width) {
-      val diff: Float = height.toFloat / width.toFloat
-      if (diff > 5) {
-        return true
-      }
-    }
-    false
   }
 
 }

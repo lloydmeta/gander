@@ -23,7 +23,7 @@ import java.net.URL
 import java.util.ArrayList
 
 import scala.collection.mutable
-import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
 import org.jsoup.nodes.{Attributes, Document, Element}
 import org.jsoup.select._
 import org.slf4j.Logger
@@ -169,8 +169,8 @@ trait ContentExtractor {
     if (elements.size == 0) return NO_STRINGS
     val tags = mutable.HashSet[String]()
 
-    for (el <- elements) {
-      var tag: String = el.text
+    for (el <- elements.asScala) {
+      val tag: String = el.text
       if (!string.isNullOrEmpty(tag)) tags += tag
     }
     tags.toSet
@@ -193,12 +193,12 @@ trait ContentExtractor {
     var i: Int                = 0
     val parentNodes           = mutable.HashSet[Element]()
     val nodesWithText         = mutable.Buffer[Element]()
-    for (node <- nodesToCheck) {
+    for (node <- nodesToCheck.asScala) {
       val nodeText: String         = node.text
       val wordStats: WordStats     = StopWords.getStopWordCount(nodeText)
       val highLinkDensity: Boolean = isHighLinkDensity(node)
       if (wordStats.getStopWordCount > 2 && !highLinkDensity) {
-        nodesWithText.add(node)
+        nodesWithText += node
       }
     }
     val numberOfNodes: Int                  = nodesWithText.size
@@ -340,7 +340,7 @@ trait ContentExtractor {
     val words: Array[String] = SPACE_SPLITTER.split(text)
     val numberOfWords        = words.length.toFloat
     val sb: StringBuilder    = new StringBuilder
-    for (link <- links) {
+    for (link <- links.asScala) {
       sb.append(link.text)
     }
     val linkText: String         = sb.toString()
@@ -438,14 +438,14 @@ trait ContentExtractor {
     val youtubeStr                     = "youtube"
     val vimdeoStr                      = "vimeo"
     try {
-      node.parent.getElementsByTag("embed").foreach(candidates.add(_))
-      node.parent.getElementsByTag("object").foreach(candidates.add(_))
+      node.parent.getElementsByTag("embed").asScala.foreach(candidates.add(_))
+      node.parent.getElementsByTag("object").asScala.foreach(candidates.add(_))
 
       trace(logPrefix + "extractVideos: Starting to extract videos. Found: " + candidates.size)
 
-      for (el <- candidates) {
+      for (el <- candidates.asScala) {
         val attrs: Attributes = el.attributes()
-        for (a <- attrs) {
+        for (a <- attrs.asScala) {
           try {
             if ((a.getValue.contains(youtubeStr) || a.getValue.contains(vimdeoStr)) && (a.getKey == "src")) {
               trace(logPrefix + "This page has a video!: " + a.getValue)
@@ -473,7 +473,7 @@ trait ContentExtractor {
   def isTableTagAndNoParagraphsExist(e: Element): Boolean = {
 
     val subParagraphs: Elements = e.getElementsByTag("p")
-    for (p <- subParagraphs) {
+    for (p <- subParagraphs.asScala) {
       if (p.text.length < 25) {
         p.remove()
       }
@@ -498,8 +498,8 @@ trait ContentExtractor {
     trace(logPrefix + "Starting cleanup Node")
     val node = addSiblings(targetNode)
     for {
-      e <- node.children
-      if (e.tagName != "p")
+      e <- node.children.asScala
+      if e.tagName != "p"
     } {
       trace(logPrefix + "CLEANUP  NODE: " + e.id + " class: " + e.attr("class"))
       if (isHighLinkDensity(e) || isTableTagAndNoParagraphsExist(e) || !isNodeScoreThreshholdMet(
@@ -552,8 +552,8 @@ trait ContentExtractor {
       } else {
 
         Some((for {
-          firstParagraph <- potentialParagraphs
-          if (firstParagraph.text.length() > 0)
+          firstParagraph <- potentialParagraphs.asScala
+          if firstParagraph.text.length() > 0
           wordStats: WordStats         = StopWords.getStopWordCount(firstParagraph.text)
           paragraphScore: Int          = wordStats.getStopWordCount
           siblingBaseLineScore: Double = .30
@@ -613,7 +613,7 @@ trait ContentExtractor {
     var scoreOfParagraphs: Int  = 0
     val nodesToCheck: Elements  = topNode.getElementsByTag("p")
 
-    for (node <- nodesToCheck) {
+    for (node <- nodesToCheck.asScala) {
       val nodeText: String         = node.text
       val wordStats: WordStats     = StopWords.getStopWordCount(nodeText)
       val highLinkDensity: Boolean = isHighLinkDensity(node)
