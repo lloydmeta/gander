@@ -1,4 +1,4 @@
-#Gander - Article Extractor [![Build Status](https://travis-ci.org/lloydmeta/gander.svg?branch=master)](https://travis-ci.org/lloydmeta/gander)
+# Gander - Article Extractor [![Build Status](https://travis-ci.org/lloydmeta/gander.svg?branch=master)](https://travis-ci.org/lloydmeta/gander)
 
 ## This is a fork
 
